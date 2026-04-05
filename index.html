@@ -153,11 +153,113 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 40px;
+            height: 60px;
             background: #7ec881;
             border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-            z-index: 0;
+            z-index: 5;
             pointer-events: none;
+        }
+        .grass-dark {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: #6abf69;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        /* Minhoca */
+        .worm-zone {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            z-index: 6;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .worm-hole {
+            position: absolute;
+            bottom: 10px;
+            width: 40px;
+            height: 22px;
+            background: radial-gradient(ellipse, #4a8c3f 0%, #3d7a35 60%, transparent 70%);
+            border-radius: 50%;
+            z-index: 8;
+        }
+        .worm {
+            position: absolute;
+            bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 7;
+            transition: left 0.5s ease;
+        }
+        .worm-body {
+            width: 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .worm-head {
+            width: 28px;
+            height: 28px;
+            background: #e84393;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+        }
+        .worm-head::before, .worm-head::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            top: 6px;
+        }
+        .worm-head::before { left: 4px; }
+        .worm-head::after { right: 4px; }
+        .worm-eye-l, .worm-eye-r {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #2d3436;
+            border-radius: 50%;
+            top: 8px;
+            z-index: 3;
+        }
+        .worm-eye-l { left: 6px; }
+        .worm-eye-r { right: 6px; }
+        .worm-segment {
+            width: 24px;
+            height: 14px;
+            border-radius: 50%;
+            margin-top: -4px;
+        }
+        .worm-segment:nth-child(2) { background: #fd79a8; }
+        .worm-segment:nth-child(3) { background: #e84393; }
+        .worm-segment:nth-child(4) { background: #fd79a8; }
+        .worm-segment:nth-child(5) { background: #e84393; }
+
+        .worm-body {
+            animation: worm-peek 3s ease-in-out;
+        }
+
+        @keyframes worm-peek {
+            0%   { transform: translateY(60px); }
+            15%  { transform: translateY(10px); }
+            25%  { transform: translateY(10px) rotate(-8deg); }
+            35%  { transform: translateY(10px) rotate(8deg); }
+            45%  { transform: translateY(10px) rotate(-5deg); }
+            55%  { transform: translateY(10px); }
+            70%  { transform: translateY(10px) rotate(0deg); }
+            85%  { transform: translateY(60px); }
+            100% { transform: translateY(60px); }
         }
 
         footer {
@@ -167,7 +269,7 @@
             text-align: center;
             color: rgba(255,255,255,0.6);
             font-size: 12px;
-            margin-bottom: 50px;
+            margin-bottom: 60px;
         }
     </style>
 </head>
@@ -238,8 +340,67 @@
     </footer>
 
     <div class="grass"></div>
+    <div class="grass-dark"></div>
+
+    <!-- Minhoca -->
+    <div class="worm-zone" id="wormZone">
+        <div class="worm-hole" id="hole1" style="left:15%;"></div>
+        <div class="worm-hole" id="hole2" style="left:40%;"></div>
+        <div class="worm-hole" id="hole3" style="left:65%;"></div>
+        <div class="worm-hole" id="hole4" style="left:85%;"></div>
+
+        <div class="worm" id="worm">
+            <div class="worm-body" id="wormBody">
+                <div class="worm-head">
+                    <div class="worm-eye-l"></div>
+                    <div class="worm-eye-r"></div>
+                </div>
+                <div class="worm-segment"></div>
+                <div class="worm-segment"></div>
+                <div class="worm-segment"></div>
+                <div class="worm-segment"></div>
+            </div>
+        </div>
+    </div>
 
     <script>
+        // Worm animation
+        const holes = [
+            document.getElementById('hole1'),
+            document.getElementById('hole2'),
+            document.getElementById('hole3'),
+            document.getElementById('hole4'),
+        ];
+        const worm = document.getElementById('worm');
+        const wormBody = document.getElementById('wormBody');
+        let currentHole = 0;
+        let lastHole = -1;
+
+        function peekWorm() {
+            // Pick a different hole
+            let next;
+            do { next = Math.floor(Math.random() * holes.length); }
+            while (next === lastHole);
+            lastHole = next;
+
+            const hole = holes[next];
+            const holeRect = hole.getBoundingClientRect();
+            const zoneRect = document.getElementById('wormZone').getBoundingClientRect();
+            const holeLeft = hole.offsetLeft + hole.offsetWidth / 2 - 14;
+
+            worm.style.left = holeLeft + 'px';
+
+            // Restart animation
+            wormBody.style.animation = 'none';
+            void wormBody.offsetWidth;
+            wormBody.style.animation = 'worm-peek 3s ease-in-out';
+
+            // Next peek
+            setTimeout(peekWorm, 3500 + Math.random() * 3000);
+        }
+
+        // Start after a short delay
+        setTimeout(peekWorm, 1500);
     </script>
 </body>
 </html>
