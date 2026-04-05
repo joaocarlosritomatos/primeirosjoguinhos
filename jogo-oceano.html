@@ -161,8 +161,8 @@
             { emoji: '🐟', speed: 1.2, size: 60 },
             { emoji: '🐠', speed: 1.5, size: 55 },
             { emoji: '🐡', speed: 0.8, size: 62 },
-            { emoji: '🦈', speed: 2.0, size: 100 },
-            { emoji: '🐬', speed: 2.5, size: 90 },
+            { emoji: '🦈', speed: 2.0, size: 100, fixRot: -Math.PI/2 },
+            { emoji: '🐬', speed: 2.5, size: 90, fixRot: -Math.PI/2 },
             { emoji: '🐙', speed: 0.6, size: 75 },
             { emoji: '🦑', speed: 0.9, size: 70 },
             { emoji: '🐢', speed: 0.5, size: 80 },
@@ -517,6 +517,8 @@
 
                 c.save();
                 c.translate(a.x,a.y);
+                // Apply fixed rotation for emojis that are drawn vertically (shark, dolphin)
+                if(a.fixRot) c.rotate(a.fixRot * (a.dir<0?-1:1));
                 c.rotate(a.tilt);
                 c.scale(a.dir<0?-scalePulse*tailWag:scalePulse*tailWag, scalePulse);
                 c.font=a.size+'px serif';
