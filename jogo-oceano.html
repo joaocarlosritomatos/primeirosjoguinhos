@@ -182,14 +182,33 @@
         function spawnAnimal(){
             const type = animalTypes[Math.floor(Math.random()*animalTypes.length)];
             const fromLeft = Math.random() > 0.5;
+            const baseY = type.bottom ? H - 50 - Math.random()*30 : 80 + Math.random()*(H-200);
             const a = {
                 ...type,
-                x: fromLeft ? -type.size : W + type.size,
-                y: type.bottom ? H - 40 - Math.random()*30 : 60 + Math.random()*(H-150),
+                x: fromLeft ? -type.size*2 : W + type.size*2,
+                y: baseY,
+                baseY: baseY,
                 dir: fromLeft ? 1 : -1,
+                // Organic movement
                 wobble: Math.random()*Math.PI*2,
-                wobbleAmp: 1 + Math.random()*2,
-                wobbleSpeed: 0.02 + Math.random()*0.02,
+                wobbleAmp: 8 + Math.random()*15,           // vertical wave amplitude
+                wobbleSpeed: 0.015 + Math.random()*0.025,  // vertical wave speed
+                // Speed variation
+                baseSpeed: type.speed,
+                speedPhase: Math.random()*Math.PI*2,
+                speedVar: 0.3 + Math.random()*0.4,         // speed varies +-30-70%
+                // Body tilt (rotation)
+                tilt: 0,
+                tiltTarget: 0,
+                // Curiosity: sometimes pause and look around
+                pauseTimer: 200 + Math.floor(Math.random()*400),
+                isPaused: false,
+                pauseDuration: 0,
+                // Scale breathing
+                scalePhase: Math.random()*Math.PI*2,
+                // Vertical drift - slowly change depth
+                driftTarget: baseY,
+                driftTimer: 100 + Math.floor(Math.random()*200),
             };
             animals.push(a);
         }
@@ -439,8 +458,51 @@
             for(let i=animals.length-1;i>=0;i--){
                 const a=animals[i];
                 a.wobble+=a.wobbleSpeed;
-                a.x+=a.speed*a.dir;
+                a.scalePhase+=0.03;
+                a.speedPhase+=0.02;
+
+                // Pause behavior - sometimes stops to "look around"
+                a.pauseTimer--;
+                if(a.pauseTimer<=0 && !a.isPaused && !a.bottom){
+                    a.isPaused=true;
+                    a.pauseDuration=40+Math.floor(Math.random()*80);
+                }
+                if(a.isPaused){
+                    a.pauseDuration--;
+                    if(a.pauseDuration<=0){
+                        a.isPaused=false;
+                        a.pauseTimer=150+Math.floor(Math.random()*350);
+                    }
+                }
+
+                // Vertical drift - slowly change swimming depth
+                a.driftTimer--;
+                if(a.driftTimer<=0){
+                    const minY=80, maxY=H-120;
+                    a.driftTarget=a.bottom ? a.baseY : (minY+Math.random()*(maxY-minY));
+                    a.driftTimer=120+Math.floor(Math.random()*250);
+                }
+                a.baseY+=(a.driftTarget-a.baseY)*0.008;
+
+                // Speed with variation (accelerate/decelerate naturally)
+                let currentSpeed=a.baseSpeed*(1+Math.sin(a.speedPhase)*a.speedVar);
+                if(a.isPaused) currentSpeed*=0.05; // almost stop when paused
+
+                a.x+=currentSpeed*a.dir;
+
+                // Organic vertical wave
                 const yOff=Math.sin(a.wobble)*a.wobbleAmp;
+                a.y=a.baseY+yOff;
+
+                // Tilt based on vertical movement direction
+                const vertSpeed=Math.cos(a.wobble)*a.wobbleAmp*a.wobbleSpeed;
+                a.tiltTarget=vertSpeed*0.08*a.dir;
+                a.tilt+=(a.tiltTarget-a.tilt)*0.1;
+                // Extra tilt when paused (looking around)
+                if(a.isPaused) a.tilt+=Math.sin(a.pauseDuration*0.15)*0.15;
+
+                // Scale breathing (subtle size pulse)
+                const scalePulse=1+Math.sin(a.scalePhase)*0.06;
 
                 // Remove if off screen
                 if((a.dir>0 && a.x>W+a.size*2)||(a.dir<0 && a.x<-a.size*2)){
@@ -448,8 +510,9 @@
                 }
 
                 c.save();
-                c.translate(a.x,a.y+yOff);
-                if(a.dir<0) c.scale(-1,1);
+                c.translate(a.x,a.y);
+                c.rotate(a.tilt);
+                c.scale(a.dir<0?-scalePulse:scalePulse, scalePulse);
                 c.font=a.size+'px serif';
                 c.textAlign='center';
                 c.textBaseline='middle';
