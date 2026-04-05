@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cores e Formas - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#dfe6e9">
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; -webkit-user-select: none;
+        }
+        body {
+            overflow: hidden;
+            background: linear-gradient(135deg, #dfe6e9, #b2bec3);
+            min-height: 100vh; min-height: 100dvh;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .home-btn {
+            position: fixed; top: 15px; left: 15px; z-index: 10;
+            width: 44px; height: 44px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,0.6); font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .score-bar {
+            position: fixed; top: 18px; right: 20px; z-index: 10;
+            display: flex; gap: 8px; align-items: center;
+        }
+        .stars {
+            font-size: 24px; letter-spacing: 2px;
+        }
+        .prompt {
+            text-align: center;
+            padding: 15px 30px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .prompt-text {
+            font-size: clamp(18px, 4.5vw, 28px);
+            font-weight: 800;
+            color: #2d3436;
+        }
+        .prompt-shape {
+            font-size: clamp(50px, 13vw, 90px);
+            line-height: 1.2;
+        }
+        .choices {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 0 20px;
+            max-width: 400px;
+            width: 100%;
+        }
+        .choice-btn {
+            aspect-ratio: 1;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(50px, 13vw, 80px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            transition: transform 0.15s;
+            position: relative;
+        }
+        .choice-btn:active { transform: scale(0.93); }
+        .choice-btn.correct {
+            animation: correct-bounce 0.6s ease;
+        }
+        .choice-btn.wrong {
+            animation: wrong-shake 0.5s ease;
+        }
+        @keyframes correct-bounce {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.2); }
+            60% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes wrong-shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
+        }
+        .celebration {
+            position: fixed; inset: 0;
+            pointer-events: none; z-index: 200;
+        }
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            z-index: 200;
+            font-size: 28px;
+            animation: confetti-fall 2s ease-out forwards;
+        }
+        @keyframes confetti-fall {
+            0% { opacity: 1; transform: translateY(-20px) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+        }
+        .feedback {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(50px, 14vw, 90px);
+            pointer-events: none;
+            z-index: 200;
+            animation: feedback-pop 0.8s ease-out forwards;
+        }
+        @keyframes feedback-pop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            40% { transform: translate(-50%, -50%) scale(1); }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -60%) scale(1.1); }
+        }
+    </script>
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">🏠</a>
+    <div class="score-bar"><span class="stars" id="stars"></span></div>
+
+    <div class="prompt" id="prompt">
+        <div class="prompt-text" id="promptText"></div>
+        <div class="prompt-shape" id="promptShape"></div>
+    </div>
+
+    <div class="choices" id="choices"></div>
+
+    <script>
+        // Audio
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+        function ensureAudio() {
+            if (!ctx) ctx = new AudioCtx();
+            if (ctx.state === 'suspended') ctx.resume();
+        }
+        function playCorrect() {
+            ensureAudio();
+            const t = ctx.currentTime;
+            [523, 659, 784].forEach((f, i) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine'; o.frequency.value = f;
+                g.gain.setValueAtTime(0.2, t + i * 0.12);
+                g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.3);
+                o.connect(g).connect(ctx.destination);
+                o.start(t + i * 0.12); o.stop(t + i * 0.12 + 0.35);
+            });
+        }
+        function playWrong() {
+            ensureAudio();
+            const t = ctx.currentTime;
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sawtooth'; o.frequency.value = 150;
+            g.gain.setValueAtTime(0.15, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+            o.connect(g).connect(ctx.destination);
+            o.start(t); o.stop(t + 0.35);
+        }
+
+        // Shapes and colors
+        const shapes = [
+            { svg: '●', name: 'circulo' },
+            { svg: '■', name: 'quadrado' },
+            { svg: '▲', name: 'triangulo' },
+            { svg: '★', name: 'estrela' },
+            { svg: '♥', name: 'coracao' },
+            { svg: '◆', name: 'losango' },
+        ];
+
+        const colors = [
+            { name: 'vermelho', hex: '#ff6b6b', bg: '#ffe0e0' },
+            { name: 'azul',     hex: '#74b9ff', bg: '#dfe9ff' },
+            { name: 'verde',    hex: '#55efc4', bg: '#d5fff0' },
+            { name: 'amarelo',  hex: '#ffd93d', bg: '#fff8d6' },
+            { name: 'roxo',     hex: '#a29bfe', bg: '#e8e6ff' },
+            { name: 'laranja',  hex: '#ffa502', bg: '#fff0d6' },
+            { name: 'rosa',     hex: '#fd79a8', bg: '#ffe0ed' },
+        ];
+
+        let score = 0;
+        let round = 0;
+        let waiting = false;
+
+        // Game modes: 'match_color' (find the color), 'match_shape' (find the shape)
+        function pickRandom(arr, exclude) {
+            let item;
+            do { item = arr[Math.floor(Math.random() * arr.length)]; }
+            while (exclude && exclude.includes(item));
+            return item;
+        }
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function newRound() {
+            waiting = false;
+            round++;
+            const mode = Math.random() > 0.5 ? 'color' : 'shape';
+
+            const targetShape = pickRandom(shapes);
+            const targetColor = pickRandom(colors);
+
+            const promptText = document.getElementById('promptText');
+            const promptShape = document.getElementById('promptShape');
+            const choicesEl = document.getElementById('choices');
+
+            // Show target
+            promptShape.textContent = targetShape.svg;
+            promptShape.style.color = targetColor.hex;
+
+            let options = [];
+            let correctIndex;
+
+            if (mode === 'color') {
+                // "Find the BLUE one"
+                promptText.textContent = `Toca no ${targetColor.name}!`;
+                // Create 4 options: same shape, different colors, one correct
+                const wrongColors = [];
+                for (let i = 0; i < 3; i++) {
+                    wrongColors.push(pickRandom(colors, [targetColor, ...wrongColors]));
+                }
+                options = shuffle([
+                    { shape: targetShape, color: targetColor, correct: true },
+                    { shape: targetShape, color: wrongColors[0], correct: false },
+                    { shape: targetShape, color: wrongColors[1], correct: false },
+                    { shape: targetShape, color: wrongColors[2], correct: false },
+                ]);
+            } else {
+                // "Find the CIRCLE"
+                promptText.textContent = `Toca no ${targetShape.name}!`;
+                const wrongShapes = [];
+                for (let i = 0; i < 3; i++) {
+                    wrongShapes.push(pickRandom(shapes, [targetShape, ...wrongShapes]));
+                }
+                options = shuffle([
+                    { shape: targetShape, color: targetColor, correct: true },
+                    { shape: wrongShapes[0], color: targetColor, correct: false },
+                    { shape: wrongShapes[1], color: targetColor, correct: false },
+                    { shape: wrongShapes[2], color: targetColor, correct: false },
+                ]);
+            }
+
+            // Render choices
+            choicesEl.innerHTML = '';
+            options.forEach((opt) => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.textContent = opt.shape.svg;
+                btn.style.color = opt.color.hex;
+                btn.style.background = opt.color.bg;
+                btn.style.fontSize = 'clamp(50px, 13vw, 80px)';
+
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    if (waiting) return;
+                    if (opt.correct) {
+                        onCorrect(btn);
+                    } else {
+                        onWrong(btn);
+                    }
+                });
+
+                choicesEl.appendChild(btn);
+            });
+        }
+
+        function onCorrect(btn) {
+            waiting = true;
+            score++;
+            updateStars();
+            playCorrect();
+            btn.classList.add('correct');
+
+            // Feedback emoji
+            const fb = document.createElement('div');
+            fb.className = 'feedback';
+            const emojis = ['🎉', '⭐', '🌟', '👏', '🥳', '✨'];
+            fb.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            document.body.appendChild(fb);
+            setTimeout(() => fb.remove(), 800);
+
+            // Confetti
+            if (score % 5 === 0) spawnConfetti();
+
+            setTimeout(newRound, 1000);
+        }
+
+        function onWrong(btn) {
+            playWrong();
+            btn.classList.add('wrong');
+            setTimeout(() => btn.classList.remove('wrong'), 500);
+        }
+
+        function updateStars() {
+            const el = document.getElementById('stars');
+            const full = Math.min(score, 20);
+            el.textContent = '⭐'.repeat(Math.min(full, 10));
+            if (full > 10) el.textContent += '\n' + '⭐'.repeat(full - 10);
+        }
+
+        function spawnConfetti() {
+            const emojis = ['🎉', '🎊', '⭐', '✨', '🌈', '🎶', '💫'];
+            for (let i = 0; i < 15; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti';
+                el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.animationDelay = (Math.random() * 0.5) + 's';
+                el.style.animationDuration = (1.5 + Math.random()) + 's';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 2500);
+            }
+        }
+
+        updateStars();
+        newRound();
+
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('dblclick', e => e.preventDefault());
+    </script>
+</body>
+</html>

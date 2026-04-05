@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Piano de Cores - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#2d3436">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; -webkit-user-select: none;
+        }
+        body {
+            overflow: hidden;
+            background: linear-gradient(180deg, #2d3436 0%, #636e72 100%);
+            min-height: 100vh; min-height: 100dvh;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .home-btn {
+            position: fixed; top: 15px; left: 15px; z-index: 10;
+            width: 44px; height: 44px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,0.15); font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none;
+        }
+        .piano {
+            display: flex;
+            gap: 6px;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            height: 70vh;
+            max-height: 500px;
+        }
+        .key {
+            flex: 1;
+            border: none;
+            border-radius: 0 0 16px 16px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 20px;
+            font-size: clamp(24px, 6vw, 40px);
+            transition: filter 0.1s, transform 0.1s;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .key::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 0 0 4px 4px;
+        }
+        .key:active, .key.active {
+            filter: brightness(1.3);
+            transform: scaleY(0.97);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+        }
+        .key .note-name {
+            font-size: clamp(12px, 3vw, 18px);
+            font-weight: 800;
+            color: rgba(255,255,255,0.6);
+            margin-top: 8px;
+        }
+        .key:nth-child(1) { background: linear-gradient(180deg, #ff6b6b, #ee5a24); }
+        .key:nth-child(2) { background: linear-gradient(180deg, #ffa502, #e67e22); }
+        .key:nth-child(3) { background: linear-gradient(180deg, #ffd93d, #f9ca24); }
+        .key:nth-child(4) { background: linear-gradient(180deg, #55efc4, #00b894); }
+        .key:nth-child(5) { background: linear-gradient(180deg, #74b9ff, #0984e3); }
+        .key:nth-child(6) { background: linear-gradient(180deg, #a29bfe, #6c5ce7); }
+        .key:nth-child(7) { background: linear-gradient(180deg, #fd79a8, #e84393); }
+        .key:nth-child(8) { background: linear-gradient(180deg, #ffffff, #dfe6e9); }
+
+        /* Particulas musicais */
+        .note-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+            font-size: 28px;
+            animation: note-fly 1.5s ease-out forwards;
+        }
+        @keyframes note-fly {
+            0%   { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(-120px) scale(0.5) rotate(20deg); }
+        }
+
+        /* Flash de cor no fundo */
+        .color-flash {
+            position: fixed; inset: 0;
+            pointer-events: none; z-index: 0;
+            animation: c-flash 0.5s ease-out forwards;
+        }
+        @keyframes c-flash {
+            0%   { opacity: 0.2; }
+            100% { opacity: 0; }
+        }
+
+        /* Modo livre vs melodia */
+        .mode-bar {
+            position: fixed; top: 15px; right: 15px; z-index: 10;
+            display: flex; gap: 8px;
+        }
+        .mode-btn {
+            padding: 8px 16px; border: none; border-radius: 20px;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            background: rgba(255,255,255,0.15); color: white;
+            transition: background 0.2s;
+        }
+        .mode-btn.active {
+            background: rgba(255,255,255,0.4);
+        }
+
+        /* Indicador de melodia */
+        .melody-hint {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            font-size: clamp(16px, 4vw, 22px);
+            font-weight: 700;
+            color: rgba(255,255,255,0.7);
+            text-align: center;
+            pointer-events: none;
+        }
+        .melody-emoji {
+            font-size: clamp(30px, 8vw, 50px);
+            display: block;
+            animation: hint-bounce 1s ease-in-out infinite;
+        }
+        @keyframes hint-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">🏠</a>
+
+    <div class="mode-bar">
+        <button class="mode-btn active" id="freeBtn" onclick="setMode('free')">Livre</button>
+        <button class="mode-btn" id="melodyBtn" onclick="setMode('melody')">Melodia</button>
+    </div>
+
+    <div class="piano" id="piano"></div>
+    <div class="melody-hint" id="hint" style="display:none;"></div>
+
+    <script>
+        // Audio
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+        function ensureAudio() {
+            if (!ctx) ctx = new AudioCtx();
+            if (ctx.state === 'suspended') ctx.resume();
+        }
+
+        // Notes (C major scale + high C)
+        const notes = [
+            { name: 'DO',  freq: 261.63, emoji: '🎵', color: '#ee5a24' },
+            { name: 'RE',  freq: 293.66, emoji: '🎶', color: '#e67e22' },
+            { name: 'MI',  freq: 329.63, emoji: '🎵', color: '#f9ca24' },
+            { name: 'FA',  freq: 349.23, emoji: '🎶', color: '#00b894' },
+            { name: 'SOL', freq: 392.00, emoji: '🎵', color: '#0984e3' },
+            { name: 'LA',  freq: 440.00, emoji: '🎶', color: '#6c5ce7' },
+            { name: 'SI',  freq: 493.88, emoji: '🎵', color: '#e84393' },
+            { name: 'DO',  freq: 523.25, emoji: '🎶', color: '#dfe6e9' },
+        ];
+
+        function playNote(freq) {
+            ensureAudio();
+            const t = ctx.currentTime;
+
+            // Main tone - warm piano-like
+            const o1 = ctx.createOscillator();
+            const o2 = ctx.createOscillator();
+            const o3 = ctx.createOscillator();
+            const g = ctx.createGain();
+            const g2 = ctx.createGain();
+            const g3 = ctx.createGain();
+            const master = ctx.createGain();
+
+            o1.type = 'sine';
+            o1.frequency.value = freq;
+            o2.type = 'sine';
+            o2.frequency.value = freq * 2;
+            o3.type = 'sine';
+            o3.frequency.value = freq * 3;
+
+            g.gain.setValueAtTime(0.35, t);
+            g.gain.exponentialRampToValueAtTime(0.2, t + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
+
+            g2.gain.setValueAtTime(0.12, t);
+            g2.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+
+            g3.gain.setValueAtTime(0.04, t);
+            g3.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+            master.gain.value = 0.6;
+
+            o1.connect(g).connect(master).connect(ctx.destination);
+            o2.connect(g2).connect(master);
+            o3.connect(g3).connect(master);
+
+            o1.start(t); o2.start(t); o3.start(t);
+            o1.stop(t + 1.6); o2.stop(t + 1); o3.stop(t + 0.5);
+        }
+
+        // Build piano
+        const piano = document.getElementById('piano');
+        notes.forEach((note, i) => {
+            const key = document.createElement('button');
+            key.className = 'key';
+            key.innerHTML = `<span>${note.emoji}</span><span class="note-name">${note.name}</span>`;
+            key.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                onKeyPress(i, key);
+            });
+            piano.appendChild(key);
+        });
+
+        // Effects
+        function spawnNoteParticle(x, y, emoji) {
+            for (let i = 0; i < 3; i++) {
+                const el = document.createElement('div');
+                el.className = 'note-particle';
+                el.textContent = emoji;
+                el.style.left = (x + (Math.random() - 0.5) * 40) + 'px';
+                el.style.top = (y - 20) + 'px';
+                el.style.animationDelay = (i * 0.1) + 's';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1500);
+            }
+        }
+
+        function flashColor(color) {
+            const el = document.createElement('div');
+            el.className = 'color-flash';
+            el.style.background = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 500);
+        }
+
+        // Modes
+        let mode = 'free';
+        let melodyIndex = 0;
+
+        // Simple melodies for kids
+        const melodies = [
+            {
+                name: 'Brilha Brilha Estrelinha',
+                emoji: '⭐',
+                notes: [0, 0, 4, 4, 5, 5, 4, -1, 3, 3, 2, 2, 1, 1, 0]
+            },
+            {
+                name: 'Parabens a Voce',
+                emoji: '🎂',
+                notes: [0, 0, 1, 0, 3, 2, -1, 0, 0, 1, 0, 4, 3]
+            },
+            {
+                name: 'Do Re Mi',
+                emoji: '🎼',
+                notes: [0, 1, 2, 0, 2, 0, 2, -1, 1, 2, 3, 3, 2, 1, 3]
+            }
+        ];
+
+        let currentMelody = 0;
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('freeBtn').classList.toggle('active', m === 'free');
+            document.getElementById('melodyBtn').classList.toggle('active', m === 'melody');
+            const hint = document.getElementById('hint');
+            if (m === 'melody') {
+                melodyIndex = 0;
+                hint.style.display = 'block';
+                updateMelodyHint();
+            } else {
+                hint.style.display = 'none';
+            }
+            // Clear highlights
+            document.querySelectorAll('.key').forEach(k => k.style.outline = '');
+        }
+
+        function updateMelodyHint() {
+            const melody = melodies[currentMelody];
+            const hint = document.getElementById('hint');
+            const nextNote = melody.notes[melodyIndex];
+
+            if (nextNote === -1) {
+                // Pause marker, skip
+                melodyIndex++;
+                if (melodyIndex >= melody.notes.length) {
+                    // Melody complete!
+                    hint.innerHTML = `<span class="melody-emoji">🎉</span>Muito bem!`;
+                    setTimeout(() => {
+                        currentMelody = (currentMelody + 1) % melodies.length;
+                        melodyIndex = 0;
+                        updateMelodyHint();
+                    }, 2000);
+                    return;
+                }
+                return updateMelodyHint();
+            }
+
+            hint.innerHTML = `<span class="melody-emoji">${melody.emoji}</span>${melody.name}`;
+
+            // Highlight next key
+            document.querySelectorAll('.key').forEach((k, i) => {
+                if (i === nextNote) {
+                    k.style.outline = '4px solid white';
+                    k.style.outlineOffset = '-4px';
+                } else {
+                    k.style.outline = '';
+                }
+            });
+        }
+
+        function onKeyPress(index, keyEl) {
+            const note = notes[index];
+            playNote(note.freq);
+
+            // Visual feedback
+            keyEl.classList.add('active');
+            setTimeout(() => keyEl.classList.remove('active'), 200);
+
+            const rect = keyEl.getBoundingClientRect();
+            spawnNoteParticle(rect.left + rect.width / 2, rect.top, note.emoji);
+            flashColor(note.color + '33');
+
+            // Melody mode
+            if (mode === 'melody') {
+                const melody = melodies[currentMelody];
+                const expected = melody.notes[melodyIndex];
+                if (index === expected) {
+                    melodyIndex++;
+                    if (melodyIndex >= melody.notes.length) {
+                        updateMelodyHint();
+                    } else {
+                        updateMelodyHint();
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('dblclick', e => e.preventDefault());
+    </script>
+</body>
+</html>
