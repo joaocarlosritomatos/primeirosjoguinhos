@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Bolhas de Sabao - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#e0f7fa">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-180x180.png">
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; -webkit-user-select: none;
+        }
+        body {
+            overflow: hidden;
+            background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 30%, #80deea 60%, #4dd0e1 100%);
+            min-height: 100vh; min-height: 100dvh;
+            font-family: 'Segoe UI', sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+        }
+        .home-btn {
+            position: fixed;
+            top: 15px; left: 15px;
+            z-index: 10;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.6);
+            font-size: 22px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none;
+        }
+        .score {
+            position: fixed;
+            top: 18px; right: 20px;
+            z-index: 10;
+            font-size: clamp(20px, 5vw, 32px);
+            font-weight: 900;
+            color: white;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">🏠</a>
+    <div class="score" id="score">0</div>
+    <canvas id="c"></canvas>
+
+    <script>
+        const canvas = document.getElementById('c');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+
+        let W, H, dpr;
+        let bubbles = [];
+        let pops = [];
+        let score = 0;
+        let spawnTimer = 0;
+
+        // Audio
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function ensureAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playPop(pitch) {
+            ensureAudio();
+            const t = audioCtx.currentTime;
+            // Pop sound - short sine burst + noise
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(800 + pitch * 400, t);
+            o.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+            g.gain.setValueAtTime(0.25, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+            o.connect(g).connect(audioCtx.destination);
+            o.start(t);
+            o.stop(t + 0.2);
+
+            // Sparkle
+            const o2 = audioCtx.createOscillator();
+            const g2 = audioCtx.createGain();
+            o2.type = 'sine';
+            o2.frequency.setValueAtTime(2000 + pitch * 800, t);
+            o2.frequency.exponentialRampToValueAtTime(500, t + 0.1);
+            g2.gain.setValueAtTime(0.08, t);
+            g2.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            o2.connect(g2).connect(audioCtx.destination);
+            o2.start(t);
+            o2.stop(t + 0.15);
+        }
+
+        function resize() {
+            dpr = window.devicePixelRatio || 1;
+            W = window.innerWidth;
+            H = window.innerHeight;
+            canvas.width = W * dpr;
+            canvas.height = H * dpr;
+            canvas.style.width = W + 'px';
+            canvas.style.height = H + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Bubble colors
+        const colors = [
+            { fill: 'rgba(255, 107, 107, 0.35)', stroke: 'rgba(255, 107, 107, 0.6)', highlight: 'rgba(255,255,255,0.7)' },
+            { fill: 'rgba(78, 205, 196, 0.35)', stroke: 'rgba(78, 205, 196, 0.6)', highlight: 'rgba(255,255,255,0.7)' },
+            { fill: 'rgba(162, 155, 254, 0.35)', stroke: 'rgba(162, 155, 254, 0.6)', highlight: 'rgba(255,255,255,0.7)' },
+            { fill: 'rgba(253, 121, 168, 0.35)', stroke: 'rgba(253, 121, 168, 0.6)', highlight: 'rgba(255,255,255,0.7)' },
+            { fill: 'rgba(255, 234, 167, 0.4)', stroke: 'rgba(255, 214, 100, 0.6)', highlight: 'rgba(255,255,255,0.8)' },
+            { fill: 'rgba(116, 185, 255, 0.35)', stroke: 'rgba(116, 185, 255, 0.6)', highlight: 'rgba(255,255,255,0.7)' },
+            { fill: 'rgba(85, 239, 196, 0.35)', stroke: 'rgba(85, 239, 196, 0.6)', highlight: 'rgba(255,255,255,0.7)' },
+            { fill: 'rgba(255, 159, 67, 0.35)', stroke: 'rgba(255, 159, 67, 0.6)', highlight: 'rgba(255,255,255,0.7)' },
+        ];
+
+        function spawnBubble() {
+            const r = 30 + Math.random() * 45;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            bubbles.push({
+                x: r + Math.random() * (W - r * 2),
+                y: H + r + Math.random() * 50,
+                r: r,
+                vy: -(0.5 + Math.random() * 1.2),
+                vx: (Math.random() - 0.5) * 0.5,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.01 + Math.random() * 0.02,
+                wobbleAmp: 0.3 + Math.random() * 0.7,
+                color: color,
+                scale: 1,
+                opacity: 1
+            });
+        }
+
+        // Pop particles
+        function createPop(x, y, r, color) {
+            const count = 8;
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+                const speed = 2 + Math.random() * 3;
+                pops.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 3 + Math.random() * 5,
+                    life: 1,
+                    color: color.stroke
+                });
+            }
+            // Sparkles
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 2;
+                pops.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    r: 2,
+                    life: 1,
+                    color: 'rgba(255,255,255,0.9)',
+                    sparkle: true
+                });
+            }
+        }
+
+        // Handle click/touch
+        function handlePop(px, py) {
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const b = bubbles[i];
+                const dx = px - b.x;
+                const dy = py - b.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < b.r + 15) {
+                    createPop(b.x, b.y, b.r, b.color);
+                    playPop(Math.random());
+                    bubbles.splice(i, 1);
+                    score++;
+                    scoreEl.textContent = score;
+
+                    // Big milestone celebration
+                    if (score % 10 === 0) {
+                        for (let j = 0; j < 20; j++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const speed = 3 + Math.random() * 5;
+                            pops.push({
+                                x: W / 2, y: H / 2,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                r: 4 + Math.random() * 6,
+                                life: 1,
+                                color: colors[Math.floor(Math.random() * colors.length)].stroke,
+                                sparkle: true
+                            });
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            handlePop(e.clientX - rect.left, e.clientY - rect.top);
+        });
+
+        // Draw bubble
+        function drawBubble(b) {
+            ctx.save();
+            ctx.globalAlpha = b.opacity;
+            ctx.translate(b.x, b.y);
+
+            // Main bubble
+            ctx.beginPath();
+            ctx.arc(0, 0, b.r * b.scale, 0, Math.PI * 2);
+            ctx.fillStyle = b.color.fill;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = b.color.stroke;
+            ctx.stroke();
+
+            // Highlight (shine)
+            ctx.beginPath();
+            ctx.ellipse(-b.r * 0.25, -b.r * 0.3, b.r * 0.35, b.r * 0.2, -0.5, 0, Math.PI * 2);
+            ctx.fillStyle = b.color.highlight;
+            ctx.fill();
+
+            // Small dot highlight
+            ctx.beginPath();
+            ctx.arc(-b.r * 0.1, -b.r * 0.5, b.r * 0.08, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Animation loop
+        function update() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Spawn bubbles
+            spawnTimer++;
+            if (spawnTimer > 40 + Math.random() * 30) {
+                spawnBubble();
+                spawnTimer = 0;
+            }
+
+            // Keep minimum bubbles
+            if (bubbles.length < 4) spawnBubble();
+
+            // Update & draw bubbles
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                const b = bubbles[i];
+                b.wobble += b.wobbleSpeed;
+                b.x += b.vx + Math.sin(b.wobble) * b.wobbleAmp;
+                b.y += b.vy;
+
+                // Remove if off screen
+                if (b.y < -b.r * 2) {
+                    bubbles.splice(i, 1);
+                    continue;
+                }
+
+                drawBubble(b);
+            }
+
+            // Update & draw pop particles
+            for (let i = pops.length - 1; i >= 0; i--) {
+                const p = pops[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05;
+                p.life -= 0.025;
+                p.vx *= 0.98;
+
+                if (p.life <= 0) {
+                    pops.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                if (p.sparkle) {
+                    ctx.fillStyle = p.color;
+                    ctx.font = `${p.r * 4}px serif`;
+                    ctx.fillText('✨', p.x, p.y);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // Start with some bubbles
+        for (let i = 0; i < 6; i++) {
+            spawnBubble();
+            bubbles[bubbles.length - 1].y = H * 0.2 + Math.random() * H * 0.6;
+        }
+
+        update();
+
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('dblclick', e => e.preventDefault());
+    </script>
+</body>
+</html>
