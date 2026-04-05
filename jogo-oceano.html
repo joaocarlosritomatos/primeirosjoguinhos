@@ -158,25 +158,25 @@
         ];
 
         const animalTypes = [
-            { emoji: '🐟', speed: 1.2, size: 45 },
-            { emoji: '🐠', speed: 1.5, size: 42 },
-            { emoji: '🐡', speed: 0.8, size: 48 },
-            { emoji: '🦈', speed: 2.0, size: 75 },
-            { emoji: '🐬', speed: 2.5, size: 68 },
-            { emoji: '🐙', speed: 0.6, size: 57 },
-            { emoji: '🦑', speed: 0.9, size: 54 },
-            { emoji: '🐢', speed: 0.5, size: 60 },
-            { emoji: '🦀', speed: 0.4, size: 39, bottom: true },
-            { emoji: '🐚', speed: 0, size: 36, bottom: true },
-            { emoji: '🦐', speed: 0.7, size: 33 },
-            { emoji: '🐋', speed: 1.0, size: 98 },
-            { emoji: '🦭', speed: 0.8, size: 63 },
-            { emoji: '🐊', speed: 1.1, size: 72 },
-            { emoji: '🪼', speed: 0.3, size: 45 },
-            { emoji: '🦞', speed: 0.4, size: 45, bottom: true },
+            { emoji: '🐟', speed: 1.2, size: 60 },
+            { emoji: '🐠', speed: 1.5, size: 55 },
+            { emoji: '🐡', speed: 0.8, size: 62 },
+            { emoji: '🦈', speed: 2.0, size: 100 },
+            { emoji: '🐬', speed: 2.5, size: 90 },
+            { emoji: '🐙', speed: 0.6, size: 75 },
+            { emoji: '🦑', speed: 0.9, size: 70 },
+            { emoji: '🐢', speed: 0.5, size: 80 },
+            { emoji: '🦀', speed: 0.4, size: 50, bottom: true },
+            { emoji: '🐚', speed: 0, size: 45, bottom: true },
+            { emoji: '🦐', speed: 0.7, size: 44 },
+            { emoji: '🐋', speed: 1.0, size: 130 },
+            { emoji: '🦭', speed: 0.8, size: 82 },
+            { emoji: '🐊', speed: 1.1, size: 95 },
+            { emoji: '🪼', speed: 0.3, size: 60 },
+            { emoji: '🦞', speed: 0.4, size: 55, bottom: true },
         ];
 
-        const plantTypes = ['🌿', '🪸', '🌱', '🍀', '🪴'];
+        const plantTypes = ['🌿', '🪸', '🌱', '🍀', '🪴', '🪸', '🌿', '🪸', '☘️', '🌾'];
 
         // ===== SPAWN FUNCTIONS =====
         function spawnAnimal(){
@@ -230,13 +230,13 @@
 
         function spawnPlants(){
             plants = [];
-            const count = 5 + Math.floor(Math.random()*5);
+            const count = 12 + Math.floor(Math.random()*8);
             for(let i=0;i<count;i++){
                 plants.push({
                     emoji: plantTypes[Math.floor(Math.random()*plantTypes.length)],
                     x: 20 + Math.random()*(W-40),
                     y: H - 20 - Math.random()*25,
-                    size: 30 + Math.random()*30,
+                    size: 35 + Math.random()*40,
                     sway: Math.random()*Math.PI*2,
                     swaySpeed: 0.01 + Math.random()*0.01,
                 });
