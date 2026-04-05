@@ -169,6 +169,37 @@
             o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.15);
         }
 
+        // Number names in Portuguese
+        const numNames = ['','um','dois','tres','quatro','cinco','seis','sete','oito','nove','dez'];
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'pt-PT';
+                u.rate = 0.85;
+                u.pitch = 1.2;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function speakCount(count) {
+            // Count out loud: "um, dois, tres... sao tres!"
+            let text = '';
+            for (let i = 1; i <= count; i++) {
+                text += numNames[i];
+                if (i < count) text += ', ';
+            }
+            text += '! ';
+            if (count === 1) text += 'e um!';
+            else text += 'sao ' + numNames[count] + '!';
+            speak(text);
+        }
+
+        function speakNumber(num) {
+            speak(numNames[num]);
+        }
+
         function showFeedback(emoji){
             const el=document.createElement('div');
             el.className='feedback-big';el.textContent=emoji;
@@ -208,6 +239,9 @@
             document.getElementById('countQ').textContent='Quantos ha?';
             document.getElementById('countItems').textContent=emoji.repeat(count);
 
+            // Speak the question
+            setTimeout(() => speak('Quantos ha?'), 300);
+
             // Generate 4 choices, one correct
             const choices=new Set([count]);
             while(choices.size<4){
@@ -233,7 +267,9 @@
                         score++;
                         document.getElementById('score').textContent=score;
                         showFeedback(['🎉','⭐','👏','🌟'][Math.floor(Math.random()*4)]);
-                        setTimeout(newCountRound,1000);
+                        // Count out loud
+                        setTimeout(() => speakCount(count), 400);
+                        setTimeout(newCountRound,2500);
                     }else{
                         playWrong();
                         btn.classList.add('wrong');
@@ -258,6 +294,7 @@
             for(let i=0;i<len;i++)orderTarget.push(start+i);
 
             document.getElementById('orderQ').textContent=`Ordena de ${start} a ${start+len-1}!`;
+            setTimeout(() => speak(`Ordena de ${numNames[start]} a ${numNames[start+len-1]}`), 300);
 
             const slotsEl=document.getElementById('orderSlots');
             slotsEl.innerHTML='';
@@ -280,6 +317,7 @@
                     if(num===orderTarget[orderPlaced]){
                         // Correct position
                         playClick();
+                        speakNumber(num);
                         btn.classList.add('used');
                         const slots=document.querySelectorAll('.order-slot');
                         slots[orderPlaced].textContent=num;
