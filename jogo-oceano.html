@@ -494,15 +494,17 @@
                 const yOff=Math.sin(a.wobble)*a.wobbleAmp;
                 a.y=a.baseY+yOff;
 
-                // Tilt based on vertical movement direction
+                // Tilt: subtle, follows vertical direction
                 const vertSpeed=Math.cos(a.wobble)*a.wobbleAmp*a.wobbleSpeed;
-                a.tiltTarget=vertSpeed*0.08*a.dir;
-                a.tilt+=(a.tiltTarget-a.tilt)*0.1;
+                a.tiltTarget=vertSpeed*0.03*a.dir;
+                a.tilt+=(a.tiltTarget-a.tilt)*0.06;
                 // Extra tilt when paused (looking around)
-                if(a.isPaused) a.tilt+=Math.sin(a.pauseDuration*0.15)*0.15;
+                if(a.isPaused) a.tilt=Math.sin(a.pauseDuration*0.1)*0.08;
 
-                // Scale breathing (subtle size pulse)
-                const scalePulse=1+Math.sin(a.scalePhase)*0.06;
+                // Tail wag effect via scaleX oscillation
+                const tailWag=1+Math.sin(a.wobble*3)*0.03*(a.isPaused?0.5:1);
+                // Scale breathing
+                const scalePulse=1+Math.sin(a.scalePhase)*0.04;
 
                 // Remove if off screen
                 if((a.dir>0 && a.x>W+a.size*2)||(a.dir<0 && a.x<-a.size*2)){
@@ -512,7 +514,7 @@
                 c.save();
                 c.translate(a.x,a.y);
                 c.rotate(a.tilt);
-                c.scale(a.dir<0?-scalePulse:scalePulse, scalePulse);
+                c.scale(a.dir<0?-scalePulse*tailWag:scalePulse*tailWag, scalePulse);
                 c.font=a.size+'px serif';
                 c.textAlign='center';
                 c.textBaseline='middle';
