@@ -176,7 +176,23 @@
             { type:'pufferfish', speed:0.6, size:40, color:'#ffd93d', spines:'#f39c12' },
         ];
 
-        const plantTypes = ['🌿', '🪸', '🌱', '🍀', '🪴', '🪸', '🌿', '🪸', '☘️', '🌾'];
+        const plantTypesDef = [
+            { type:'seaweed', colors:['#27ae60','#2ecc71','#1abc9c'] },
+            { type:'seaweed', colors:['#16a085','#1abc9c','#0e8c6e'] },
+            { type:'seaweed', colors:['#6ab04c','#78e08f','#55a03a'] },
+            { type:'coral_branch', colors:['#e74c3c','#ff6b6b','#c0392b'] },
+            { type:'coral_branch', colors:['#e84393','#fd79a8','#c0357a'] },
+            { type:'coral_branch', colors:['#f39c12','#ffd93d','#e67e22'] },
+            { type:'coral_round', colors:['#ff6b6b','#ff9f9f','#ee5a24'] },
+            { type:'coral_round', colors:['#a29bfe','#c8c5ff','#6c5ce7'] },
+            { type:'coral_round', colors:['#fdcb6e','#ffeaa7','#f39c12'] },
+            { type:'anemone', colors:['#e84393','#fd79a8','#c0357a'] },
+            { type:'anemone', colors:['#00b894','#55efc4','#009974'] },
+            { type:'kelp', colors:['#2d5a1e','#3d7a35','#4a8c3f'] },
+            { type:'rock', colors:['#636e72','#7a8a8e','#4a5568'] },
+            { type:'starfish', colors:['#e67e22','#f39c12','#d35400'] },
+            { type:'shell', colors:['#ffeaa7','#fdcb6e','#f9ca24'] },
+        ];
 
         // ===== SPAWN FUNCTIONS =====
         function spawnAnimal(){
@@ -230,17 +246,23 @@
 
         function spawnPlants(){
             plants = [];
-            const count = 12 + Math.floor(Math.random()*8);
+            const count = 15 + Math.floor(Math.random()*10);
             for(let i=0;i<count;i++){
+                const def = plantTypesDef[Math.floor(Math.random()*plantTypesDef.length)];
                 plants.push({
-                    emoji: plantTypes[Math.floor(Math.random()*plantTypes.length)],
-                    x: 20 + Math.random()*(W-40),
-                    y: H - 20 - Math.random()*25,
-                    size: 35 + Math.random()*40,
+                    ...def,
+                    x: 15 + Math.random()*(W-30),
+                    y: H - 15,
+                    size: 30 + Math.random()*35,
                     sway: Math.random()*Math.PI*2,
-                    swaySpeed: 0.01 + Math.random()*0.01,
+                    swaySpeed: 0.008 + Math.random()*0.012,
+                    segments: 4 + Math.floor(Math.random()*4), // for seaweed/kelp
+                    branches: 3 + Math.floor(Math.random()*3), // for coral
+                    tentacles: 6 + Math.floor(Math.random()*6), // for anemone
                 });
             }
+            // Sort by y so further back renders first
+            plants.sort((a,b)=>a.size - b.size);
         }
 
         function spawnBubble(){
@@ -440,13 +462,264 @@
         function drawPlants(){
             plants.forEach(p=>{
                 p.sway+=p.swaySpeed;
+                const S=p.size;
+                const sw=Math.sin(p.sway);
                 c.save();
                 c.translate(p.x,p.y);
-                c.rotate(Math.sin(p.sway)*0.1);
-                c.font=p.size+'px serif';
-                c.textAlign='center';
-                c.textBaseline='bottom';
-                c.fillText(p.emoji,0,0);
+
+                if(p.type==='seaweed'){
+                    // Wavy seaweed strands
+                    for(let strand=-1;strand<=1;strand++){
+                        c.beginPath();
+                        c.moveTo(strand*S*0.08,0);
+                        let cx=strand*S*0.08;
+                        for(let seg=0;seg<p.segments;seg++){
+                            const segH=-S*0.2*(seg+1);
+                            const wave=Math.sin(p.sway+seg*0.8+strand)*S*0.12;
+                            cx+=wave*0.3;
+                            c.quadraticCurveTo(cx+wave,segH+S*0.1,cx,segH);
+                        }
+                        c.strokeStyle=p.colors[Math.abs(strand)];
+                        c.lineWidth=S*0.08;
+                        c.lineCap='round';
+                        c.stroke();
+                        // Leaf blobs along strand
+                        for(let seg=1;seg<p.segments;seg++){
+                            const leafY=-S*0.2*seg;
+                            const leafX=cx+Math.sin(p.sway+seg)*S*0.08;
+                            c.beginPath();
+                            c.ellipse(leafX+strand*S*0.06,leafY,S*0.07,S*0.04,sw*0.3+strand,0,Math.PI*2);
+                            c.fillStyle=p.colors[2]||p.colors[0];
+                            c.globalAlpha=0.7;
+                            c.fill();
+                            c.globalAlpha=1;
+                        }
+                    }
+
+                } else if(p.type==='coral_branch'){
+                    // Branching coral
+                    for(let b=0;b<p.branches;b++){
+                        const angle=-Math.PI/2 + (b-p.branches/2+0.5)*0.4 + sw*0.05;
+                        const len=S*0.5+b*S*0.08;
+                        c.save();
+                        c.rotate(angle+Math.PI/2);
+                        // Main branch
+                        c.beginPath();
+                        c.moveTo(0,0);
+                        c.lineTo(0,-len);
+                        c.strokeStyle=p.colors[0];
+                        c.lineWidth=S*0.07;
+                        c.lineCap='round';
+                        c.stroke();
+                        // Sub branches
+                        for(let sb=1;sb<=2;sb++){
+                            const subY=-len*sb*0.4;
+                            const subAngle=(sb%2===0?1:-1)*0.5+Math.sin(p.sway+b+sb)*0.1;
+                            c.save();
+                            c.translate(0,subY);
+                            c.rotate(subAngle);
+                            c.beginPath();
+                            c.moveTo(0,0);
+                            c.lineTo(0,-len*0.3);
+                            c.strokeStyle=p.colors[1];
+                            c.lineWidth=S*0.04;
+                            c.stroke();
+                            // Tip blob
+                            c.beginPath();
+                            c.arc(0,-len*0.3,S*0.05,0,Math.PI*2);
+                            c.fillStyle=p.colors[1];
+                            c.fill();
+                            c.restore();
+                        }
+                        // Tip
+                        c.beginPath();
+                        c.arc(0,-len,S*0.06,0,Math.PI*2);
+                        c.fillStyle=p.colors[1];
+                        c.fill();
+                        c.restore();
+                    }
+
+                } else if(p.type==='coral_round'){
+                    // Round brain/cushion coral
+                    const pulse=1+Math.sin(p.sway*0.5)*0.03;
+                    // Base
+                    c.beginPath();
+                    c.ellipse(0,-S*0.2,S*0.4*pulse,S*0.25*pulse,0,0,Math.PI*2);
+                    c.fillStyle=p.colors[0];
+                    c.fill();
+                    // Bumps
+                    for(let b=0;b<6;b++){
+                        const bAngle=(Math.PI*2*b)/6+sw*0.05;
+                        const bx=Math.cos(bAngle)*S*0.22;
+                        const by=-S*0.2+Math.sin(bAngle)*S*0.13;
+                        c.beginPath();
+                        c.arc(bx,by,S*0.1*pulse,0,Math.PI*2);
+                        c.fillStyle=p.colors[1];
+                        c.globalAlpha=0.5;
+                        c.fill();
+                        c.globalAlpha=1;
+                    }
+                    // Texture lines
+                    c.beginPath();
+                    c.ellipse(0,-S*0.2,S*0.25*pulse,S*0.15*pulse,0,0,Math.PI*2);
+                    c.strokeStyle=p.colors[2]||p.colors[0];
+                    c.lineWidth=1;
+                    c.globalAlpha=0.3;
+                    c.stroke();
+                    c.globalAlpha=1;
+
+                } else if(p.type==='anemone'){
+                    // Sea anemone with waving tentacles
+                    // Base/stalk
+                    c.beginPath();
+                    c.moveTo(-S*0.1,0);
+                    c.quadraticCurveTo(-S*0.12,-S*0.15,-S*0.08,-S*0.25);
+                    c.lineTo(S*0.08,-S*0.25);
+                    c.quadraticCurveTo(S*0.12,-S*0.15,S*0.1,0);
+                    c.fillStyle=p.colors[2];
+                    c.fill();
+                    // Tentacles
+                    for(let t=0;t<p.tentacles;t++){
+                        const tAngle=-Math.PI*0.8+t*(Math.PI*0.6/(p.tentacles-1));
+                        const wave=Math.sin(p.sway*1.5+t*0.7)*0.2;
+                        const tLen=S*0.35+Math.sin(t*2.3)*S*0.1;
+                        c.beginPath();
+                        const bx=Math.cos(tAngle+wave)*S*0.06;
+                        const by=-S*0.25;
+                        c.moveTo(bx,by);
+                        const tipX=bx+Math.cos(tAngle+wave)*tLen;
+                        const tipY=by+Math.sin(tAngle+wave)*tLen;
+                        const cpx=bx+Math.cos(tAngle+wave*2)*tLen*0.6;
+                        const cpy=by+Math.sin(tAngle+wave*2)*tLen*0.6;
+                        c.quadraticCurveTo(cpx,cpy,tipX,tipY);
+                        c.strokeStyle=p.colors[0];
+                        c.lineWidth=S*0.035;
+                        c.lineCap='round';
+                        c.stroke();
+                        // Tip glow
+                        c.beginPath();
+                        c.arc(tipX,tipY,S*0.025,0,Math.PI*2);
+                        c.fillStyle=p.colors[1];
+                        c.fill();
+                    }
+
+                } else if(p.type==='kelp'){
+                    // Tall kelp - multiple long wavy strands
+                    for(let strand=0;strand<3;strand++){
+                        const sx=(strand-1)*S*0.1;
+                        c.beginPath();
+                        c.moveTo(sx,0);
+                        let kx=sx;
+                        for(let seg=0;seg<6;seg++){
+                            const segY=-S*0.18*(seg+1);
+                            const wave=Math.sin(p.sway*0.8+seg*0.6+strand*1.5)*S*0.1;
+                            kx+=wave*0.2;
+                            c.quadraticCurveTo(kx+wave,segY+S*0.09,kx,segY);
+                        }
+                        c.strokeStyle=p.colors[strand%p.colors.length];
+                        c.lineWidth=S*0.06;
+                        c.lineCap='round';
+                        c.stroke();
+                        // Leaves
+                        for(let seg=1;seg<6;seg+=2){
+                            const ly=-S*0.18*seg;
+                            const lWave=Math.sin(p.sway+seg+strand)*S*0.06;
+                            const side=seg%2===0?1:-1;
+                            c.beginPath();
+                            c.ellipse(kx+side*S*0.08+lWave,ly,S*0.1,S*0.03,side*0.5+sw*0.2,0,Math.PI*2);
+                            c.fillStyle=p.colors[1]||p.colors[0];
+                            c.globalAlpha=0.6;
+                            c.fill();
+                            c.globalAlpha=1;
+                        }
+                    }
+
+                } else if(p.type==='rock'){
+                    // Rock/stone
+                    c.beginPath();
+                    c.moveTo(-S*0.3,0);
+                    c.quadraticCurveTo(-S*0.35,-S*0.15,-S*0.2,-S*0.3);
+                    c.quadraticCurveTo(-S*0.05,-S*0.4,S*0.1,-S*0.32);
+                    c.quadraticCurveTo(S*0.3,-S*0.2,S*0.32,-S*0.05);
+                    c.quadraticCurveTo(S*0.3,0,S*0.25,0);
+                    c.closePath();
+                    c.fillStyle=p.colors[0];
+                    c.fill();
+                    // Highlights
+                    c.beginPath();
+                    c.ellipse(-S*0.05,-S*0.22,S*0.1,S*0.06,-0.3,0,Math.PI*2);
+                    c.fillStyle=p.colors[1];
+                    c.globalAlpha=0.3;
+                    c.fill();
+                    c.globalAlpha=1;
+                    // Shadow
+                    c.beginPath();
+                    c.ellipse(S*0.1,-S*0.08,S*0.12,S*0.06,0.2,0,Math.PI*2);
+                    c.fillStyle=p.colors[2];
+                    c.globalAlpha=0.2;
+                    c.fill();
+                    c.globalAlpha=1;
+
+                } else if(p.type==='starfish'){
+                    // Starfish on the sand
+                    const rot=p.sway*0.02; // very slow rotation
+                    c.save();
+                    c.rotate(rot);
+                    for(let arm=0;arm<5;arm++){
+                        const angle=(Math.PI*2*arm)/5 - Math.PI/2;
+                        c.beginPath();
+                        c.moveTo(0,0);
+                        const tipX=Math.cos(angle)*S*0.35;
+                        const tipY=Math.sin(angle)*S*0.35;
+                        const cp1x=Math.cos(angle-0.3)*S*0.15;
+                        const cp1y=Math.sin(angle-0.3)*S*0.15;
+                        const cp2x=Math.cos(angle+0.3)*S*0.15;
+                        const cp2y=Math.sin(angle+0.3)*S*0.15;
+                        c.quadraticCurveTo(cp1x,cp1y,tipX,tipY);
+                        c.quadraticCurveTo(cp2x,cp2y,0,0);
+                        c.fillStyle=p.colors[arm%2===0?0:1];
+                        c.fill();
+                    }
+                    // Center
+                    c.beginPath();
+                    c.arc(0,0,S*0.06,0,Math.PI*2);
+                    c.fillStyle=p.colors[2];
+                    c.fill();
+                    // Dots on arms
+                    for(let arm=0;arm<5;arm++){
+                        const angle=(Math.PI*2*arm)/5 - Math.PI/2;
+                        c.beginPath();
+                        c.arc(Math.cos(angle)*S*0.18,Math.sin(angle)*S*0.18,S*0.025,0,Math.PI*2);
+                        c.fillStyle=p.colors[2];
+                        c.globalAlpha=0.5;
+                        c.fill();
+                        c.globalAlpha=1;
+                    }
+                    c.restore();
+
+                } else if(p.type==='shell'){
+                    // Spiral shell
+                    c.beginPath();
+                    for(let t=0;t<Math.PI*3;t+=0.1){
+                        const r=S*0.04*t;
+                        const sx=Math.cos(t+p.sway*0.01)*r;
+                        const sy=-S*0.15+Math.sin(t+p.sway*0.01)*r*0.6;
+                        if(t===0) c.moveTo(sx,sy);
+                        else c.lineTo(sx,sy);
+                    }
+                    c.strokeStyle=p.colors[0];
+                    c.lineWidth=S*0.06;
+                    c.lineCap='round';
+                    c.stroke();
+                    // Shell body
+                    c.beginPath();
+                    c.ellipse(0,-S*0.1,S*0.2,S*0.15,0,0,Math.PI*2);
+                    c.fillStyle=p.colors[1];
+                    c.globalAlpha=0.4;
+                    c.fill();
+                    c.globalAlpha=1;
+                }
+
                 c.restore();
             });
         }
