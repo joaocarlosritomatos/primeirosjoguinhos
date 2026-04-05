@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Objetos do Dia a Dia - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffeaa7">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+        body{overflow:hidden;background:linear-gradient(135deg,#ffeaa7 0%,#fdcb6e 50%,#f9ca24 100%);min-height:100vh;min-height:100dvh;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+        .cloud{position:fixed;background:rgba(255,255,255,0.5);border-radius:50px;animation:float-cloud linear infinite;z-index:0;pointer-events:none;}
+        .cloud::before,.cloud::after{content:'';position:absolute;background:rgba(255,255,255,0.5);border-radius:50%;}
+        .cloud::before{width:60%;height:80%;top:-40%;left:20%;}
+        .cloud::after{width:40%;height:60%;top:-25%;left:55%;}
+        @keyframes float-cloud{from{transform:translateX(110vw)}to{transform:translateX(-200px)}}
+        .page-dots{position:relative;z-index:2;display:flex;gap:8px;margin-bottom:8px;}
+        .page-dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.4);border:2px solid rgba(255,255,255,0.7);transition:all 0.3s;}
+        .page-dot.active{background:white;transform:scale(1.3);box-shadow:0 0 8px rgba(255,255,255,0.8);}
+        .game-container{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px;max-width:520px;width:100%;}
+        .obj-btn{aspect-ratio:1;border:none;border-radius:22px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:clamp(42px,11vw,68px);transition:transform 0.15s ease;position:relative;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.12);gap:2px;}
+        .obj-btn .obj-name{font-size:clamp(9px,2.3vw,13px);font-weight:800;color:rgba(0,0,0,0.35);letter-spacing:0.5px;}
+        .obj-btn:active{transform:scale(0.93);}
+        .obj-btn.pop{animation:pop-bounce 0.6s ease;}
+        @keyframes pop-bounce{0%{transform:scale(1)}20%{transform:scale(1.25) rotate(-5deg)}40%{transform:scale(1.15) rotate(5deg)}60%{transform:scale(1.2) rotate(-3deg)}80%{transform:scale(1.1) rotate(2deg)}100%{transform:scale(1) rotate(0deg)}}
+        .obj-btn:nth-child(1){background:linear-gradient(145deg,#FFE66D,#FFD93D);}
+        .obj-btn:nth-child(2){background:linear-gradient(145deg,#FF6B6B,#EE5A24);}
+        .obj-btn:nth-child(3){background:linear-gradient(145deg,#4ECDC4,#44BD9E);}
+        .obj-btn:nth-child(4){background:linear-gradient(145deg,#A29BFE,#6C5CE7);}
+        .obj-btn:nth-child(5){background:linear-gradient(145deg,#FD79A8,#E84393);}
+        .obj-btn:nth-child(6){background:linear-gradient(145deg,#FFEAA7,#FDCB6E);}
+        .obj-btn:nth-child(7){background:linear-gradient(145deg,#74b9ff,#0984e3);}
+        .obj-btn:nth-child(8){background:linear-gradient(145deg,#55efc4,#00b894);}
+        .obj-btn:nth-child(9){background:linear-gradient(145deg,#fab1a0,#e17055);}
+        .particle{position:fixed;pointer-events:none;z-index:100;font-size:28px;animation:particle-fly 1s ease-out forwards;}
+        @keyframes particle-fly{0%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.3) rotate(360deg)}}
+        .sound-label{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:clamp(28px,7vw,50px);font-weight:900;color:white;text-shadow:3px 3px 0 rgba(0,0,0,0.25),-1px -1px 0 rgba(0,0,0,0.1);pointer-events:none;z-index:200;animation:label-pop 1.2s ease-out forwards;}
+        @keyframes label-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}30%{transform:translate(-50%,-50%) scale(1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%) scale(1.1)}}
+        .bg-flash{position:fixed;inset:0;pointer-events:none;z-index:50;animation:flash 0.4s ease-out forwards;}
+        @keyframes flash{0%{opacity:0.3}100%{opacity:0}}
+        .nav-area{position:relative;z-index:1;display:flex;gap:16px;margin-top:8px;}
+        .nav-btn{padding:12px 32px;border:none;border-radius:50px;background:rgba(255,255,255,0.7);font-size:26px;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:transform 0.15s;backdrop-filter:blur(5px);}
+        .nav-btn:active{transform:scale(0.93);}
+        .home-btn{position:fixed;top:12px;left:12px;z-index:20;width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+        .cat-title{position:relative;z-index:2;font-size:clamp(16px,4vw,22px);font-weight:800;color:rgba(255,255,255,0.8);text-shadow:1px 1px 0 rgba(0,0,0,0.1);}
+        .grass{position:fixed;bottom:0;left:0;right:0;height:35px;background:#7ec881;border-radius:50% 50% 0 0/100% 100% 0 0;z-index:0;pointer-events:none;}
+        .ios-unlock{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;backdrop-filter:blur(5px);}.ios-unlock-emoji{font-size:80px;animation:ios-bounce 1s ease-in-out infinite;}.ios-unlock-text{font-size:24px;font-weight:800;color:white;text-shadow:2px 2px 0 rgba(0,0,0,0.2);}@keyframes ios-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    </style>
+</head>
+<body>
+<div class="ios-unlock" id="iosUnlock"><div class="ios-unlock-emoji">🔊</div><div class="ios-unlock-text">Toca para comecar!</div></div>
+    <a href="index.html" class="home-btn">🏠</a>
+    <div class="cloud" style="width:120px;height:40px;top:8%;animation-duration:25s;animation-delay:-5s;"></div>
+    <div class="cloud" style="width:90px;height:30px;top:18%;animation-duration:35s;animation-delay:-15s;"></div>
+    <div class="cloud" style="width:150px;height:45px;top:5%;animation-duration:30s;animation-delay:-22s;"></div>
+
+    <div class="cat-title" id="catTitle"></div>
+    <div class="page-dots" id="dots"></div>
+    <div class="game-container" id="game"></div>
+    <div class="nav-area">
+        <button class="nav-btn" id="prevBtn">&#9664;</button>
+        <button class="nav-btn" id="nextBtn">&#9654;</button>
+    </div>
+    <div class="grass"></div>
+
+    <script>
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+        function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
+
+        function playSound(freqs, type, duration) {
+            ensureAudio();
+            const t = ctx.currentTime;
+            freqs.forEach((f, i) => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = type || 'sine';
+                o.frequency.setValueAtTime(f[0], t + i * 0.12);
+                if (f[1]) o.frequency.linearRampToValueAtTime(f[1], t + i * 0.12 + (duration || 0.15));
+                g.gain.setValueAtTime(0.25, t + i * 0.12);
+                g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + (duration || 0.2));
+                o.connect(g).connect(ctx.destination);
+                o.start(t + i * 0.12);
+                o.stop(t + i * 0.12 + (duration || 0.25));
+            });
+        }
+
+        // Sound effects per category
+        const soundFX = {
+            // Simple fun sounds
+            ding:    () => playSound([[800,1200],[1000,1400]], 'sine', 0.15),
+            knock:   () => playSound([[200,100],[180,90]], 'triangle', 0.08),
+            swoosh:  () => playSound([[400,800],[600,300]], 'sawtooth', 0.12),
+            pop:     () => playSound([[600,900]], 'sine', 0.1),
+            ring:    () => playSound([[800,600],[1000,800],[1200,1000]], 'sine', 0.12),
+            splash:  () => { ensureAudio(); const t=ctx.currentTime; const n=ctx.createBufferSource(); const buf=ctx.createBuffer(1,ctx.sampleRate*0.2,ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/d.length*5); n.buffer=buf; const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=800;f.Q.value=2; const g=ctx.createGain();g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3); n.connect(f).connect(g).connect(ctx.destination);n.start(t);},
+            beep:    () => playSound([[523],[659],[784]], 'square', 0.08),
+            vroom:   () => playSound([[100,200],[150,300],[200,150]], 'sawtooth', 0.15),
+            chomp:   () => playSound([[300,150],[250,100]], 'square', 0.08),
+            click:   () => playSound([[1200,800]], 'sine', 0.05),
+            bounce:  () => playSound([[400,600],[300,500]], 'sine', 0.1),
+            twinkle: () => playSound([[1000,1500],[1200,1800],[1500,2000]], 'sine', 0.1),
+        };
+
+        // Object categories
+        const objectPages = [
+            {
+                title: '🏠 Casa',
+                items: [
+                    { emoji:'🚪', name:'PORTA', sound:'knock', label:'Toc Toc!' },
+                    { emoji:'🪟', name:'JANELA', sound:'swoosh', label:'Abrir!' },
+                    { emoji:'💡', name:'LUZ', sound:'ding', label:'Click!' },
+                    { emoji:'🛏️', name:'CAMA', sound:'pop', label:'Zzz...' },
+                    { emoji:'🪑', name:'CADEIRA', sound:'knock', label:'Sentar!' },
+                    { emoji:'🚿', name:'CHUVEIRO', sound:'splash', label:'Splash!' },
+                    { emoji:'📺', name:'TV', sound:'beep', label:'Ligar!' },
+                    { emoji:'🔑', name:'CHAVE', sound:'ring', label:'Clink!' },
+                    { emoji:'🕐', name:'RELOGIO', sound:'click', label:'Tic Tac!' },
+                ]
+            },
+            {
+                title: '🍽️ Cozinha',
+                items: [
+                    { emoji:'🍽️', name:'PRATO', sound:'ding', label:'Ding!' },
+                    { emoji:'🥄', name:'COLHER', sound:'click', label:'Clink!' },
+                    { emoji:'🍳', name:'FRIGIDEIRA', sound:'splash', label:'Sizzz!' },
+                    { emoji:'🧊', name:'GELO', sound:'pop', label:'Crack!' },
+                    { emoji:'☕', name:'CHÁVENA', sound:'ding', label:'Sip!' },
+                    { emoji:'🫖', name:'BULE', sound:'splash', label:'Glug!' },
+                    { emoji:'🧂', name:'SAL', sound:'pop', label:'Shh!' },
+                    { emoji:'🍶', name:'GARRAFA', sound:'pop', label:'Pop!' },
+                    { emoji:'🧽', name:'ESPONJA', sound:'splash', label:'Splash!' },
+                ]
+            },
+            {
+                title: '👕 Roupa',
+                items: [
+                    { emoji:'👕', name:'CAMISOLA', sound:'swoosh', label:'Vestir!' },
+                    { emoji:'👖', name:'CALÇAS', sound:'swoosh', label:'Zip!' },
+                    { emoji:'👟', name:'SAPATOS', sound:'knock', label:'Tap Tap!' },
+                    { emoji:'🧦', name:'MEIAS', sound:'pop', label:'Puxar!' },
+                    { emoji:'🎒', name:'MOCHILA', sound:'swoosh', label:'Zip!' },
+                    { emoji:'👒', name:'CHAPÉU', sound:'pop', label:'Plop!' },
+                    { emoji:'🧤', name:'LUVAS', sound:'swoosh', label:'Snap!' },
+                    { emoji:'🧣', name:'CACHECOL', sound:'swoosh', label:'Wrap!' },
+                    { emoji:'👓', name:'ÓCULOS', sound:'click', label:'Click!' },
+                ]
+            },
+            {
+                title: '🚗 Transportes',
+                items: [
+                    { emoji:'🚗', name:'CARRO', sound:'vroom', label:'Vrum!' },
+                    { emoji:'🚌', name:'AUTOCARRO', sound:'vroom', label:'Biii!' },
+                    { emoji:'🚲', name:'BICICLETA', sound:'ring', label:'Trim!' },
+                    { emoji:'✈️', name:'AVIÃO', sound:'swoosh', label:'Vuuush!' },
+                    { emoji:'🚂', name:'COMBOIO', sound:'vroom', label:'Chu Chu!' },
+                    { emoji:'🚀', name:'FOGUETÃO', sound:'vroom', label:'Blast!' },
+                    { emoji:'🛵', name:'MOTA', sound:'vroom', label:'Brrr!' },
+                    { emoji:'⛵', name:'BARCO', sound:'splash', label:'Splash!' },
+                    { emoji:'🚁', name:'HELICÓPTERO', sound:'swoosh', label:'Chop!' },
+                ]
+            },
+            {
+                title: '🎮 Brinquedos',
+                items: [
+                    { emoji:'🧸', name:'PELUCHE', sound:'pop', label:'Fofinho!' },
+                    { emoji:'⚽', name:'BOLA', sound:'bounce', label:'Boing!' },
+                    { emoji:'🎨', name:'TINTAS', sound:'splash', label:'Splash!' },
+                    { emoji:'🪁', name:'PAPAGAIO', sound:'swoosh', label:'Vuush!' },
+                    { emoji:'🎲', name:'DADOS', sound:'knock', label:'Roll!' },
+                    { emoji:'🧩', name:'PUZZLE', sound:'click', label:'Click!' },
+                    { emoji:'🪀', name:'IOIO', sound:'swoosh', label:'Zzip!' },
+                    { emoji:'🎈', name:'BALÃO', sound:'pop', label:'Pop!' },
+                    { emoji:'🖍️', name:'LÁPIS', sound:'click', label:'Riiis!' },
+                ]
+            },
+            {
+                title: '🌳 Jardim',
+                items: [
+                    { emoji:'🌸', name:'FLOR', sound:'twinkle', label:'Linda!' },
+                    { emoji:'🌳', name:'ÁRVORE', sound:'swoosh', label:'Shhhh!' },
+                    { emoji:'🦋', name:'BORBOLETA', sound:'twinkle', label:'Flutter!' },
+                    { emoji:'🐛', name:'LAGARTA', sound:'chomp', label:'Nhom!' },
+                    { emoji:'🍂', name:'FOLHA', sound:'swoosh', label:'Shh!' },
+                    { emoji:'🌧️', name:'CHUVA', sound:'splash', label:'Plic Ploc!' },
+                    { emoji:'☀️', name:'SOL', sound:'twinkle', label:'Brilha!' },
+                    { emoji:'🌈', name:'ARCO-ÍRIS', sound:'twinkle', label:'Uau!' },
+                    { emoji:'💧', name:'GOTA', sound:'splash', label:'Plop!' },
+                ]
+            },
+            {
+                title: '🍎 Comida',
+                items: [
+                    { emoji:'🍎', name:'MAÇÃ', sound:'chomp', label:'Crunch!' },
+                    { emoji:'🍌', name:'BANANA', sound:'chomp', label:'Nhom!' },
+                    { emoji:'🥛', name:'LEITE', sound:'splash', label:'Glug!' },
+                    { emoji:'🍞', name:'PÃO', sound:'chomp', label:'Crunch!' },
+                    { emoji:'🧀', name:'QUEIJO', sound:'chomp', label:'Nhom!' },
+                    { emoji:'🍪', name:'BOLACHA', sound:'chomp', label:'Crok!' },
+                    { emoji:'🍕', name:'PIZZA', sound:'chomp', label:'Yum!' },
+                    { emoji:'🎂', name:'BOLO', sound:'twinkle', label:'Parabéns!' },
+                    { emoji:'🍦', name:'GELADO', sound:'pop', label:'Slurp!' },
+                ]
+            },
+        ];
+
+        let currentPage = 0;
+
+        const particleEmojis = ['⭐','✨','🌟','💫','❤️','🎉','🎶','🎵'];
+
+        function spawnParticles(x, y) {
+            for (let i = 0; i < 10; i++) {
+                const el = document.createElement('div');
+                el.className = 'particle';
+                el.textContent = particleEmojis[Math.floor(Math.random() * particleEmojis.length)];
+                const angle = (Math.PI * 2 * i) / 10;
+                const dist = 70 + Math.random() * 60;
+                el.style.left = x + 'px';
+                el.style.top = y + 'px';
+                el.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                el.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            }
+        }
+
+        function showLabel(text) {
+            const el = document.createElement('div');
+            el.className = 'sound-label';
+            el.textContent = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1200);
+        }
+
+        function flashBg(color) {
+            const el = document.createElement('div');
+            el.className = 'bg-flash';
+            el.style.background = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 400);
+        }
+
+        function onObjClick(e, obj) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            e.currentTarget.classList.remove('pop');
+            void e.currentTarget.offsetWidth;
+            e.currentTarget.classList.add('pop');
+
+            // Play sound
+            if (soundFX[obj.sound]) soundFX[obj.sound]();
+
+            // Also speak the name
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(obj.name);
+                u.lang = 'pt-PT';
+                u.rate = 0.9;
+                u.pitch = 1.2;
+                setTimeout(() => window.speechSynthesis.speak(u), 400);
+            }
+
+            spawnParticles(cx, cy);
+            showLabel(obj.label);
+            flashBg('rgba(255,255,255,0.3)');
+        }
+
+        function renderDots() {
+            const dots = document.getElementById('dots');
+            dots.innerHTML = '';
+            for (let i = 0; i < objectPages.length; i++) {
+                const d = document.createElement('div');
+                d.className = 'page-dot' + (i === currentPage ? ' active' : '');
+                d.onclick = () => { currentPage = i; renderPage(); };
+                dots.appendChild(d);
+            }
+        }
+
+        function renderPage() {
+            const container = document.getElementById('game');
+            container.innerHTML = '';
+            const page = objectPages[currentPage];
+
+            document.getElementById('catTitle').textContent = page.title;
+
+            page.items.forEach(obj => {
+                const btn = document.createElement('button');
+                btn.className = 'obj-btn';
+
+                const emojiSpan = document.createElement('span');
+                emojiSpan.textContent = obj.emoji;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'obj-name';
+                nameSpan.textContent = obj.name;
+
+                btn.appendChild(emojiSpan);
+                btn.appendChild(nameSpan);
+
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    onObjClick(e, obj);
+                });
+
+                container.appendChild(btn);
+            });
+
+            renderDots();
+        }
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            currentPage = (currentPage + 1) % objectPages.length;
+            renderPage();
+        });
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            currentPage = (currentPage - 1 + objectPages.length) % objectPages.length;
+            renderPage();
+        });
+
+        // Swipe support
+        let touchStartX = 0;
+        document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+        document.addEventListener('touchend', e => {
+            const diff = e.changedTouches[0].clientX - touchStartX;
+            if (Math.abs(diff) > 60) {
+                if (diff < 0) { currentPage = (currentPage + 1) % objectPages.length; renderPage(); }
+                else { currentPage = (currentPage - 1 + objectPages.length) % objectPages.length; renderPage(); }
+            }
+        }, { passive: true });
+
+        renderPage();
+
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('dblclick', e => e.preventDefault());
+
+        // iOS audio unlock
+        (function() {
+            var unlock = document.getElementById('iosUnlock');
+            var silentMP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA';
+            function doUnlock(e) {
+                if (e) e.preventDefault();
+                try { var audio = new Audio(silentMP3); audio.volume = 0.01; audio.play().catch(function(){}); } catch(err) {}
+                var AC = window.AudioContext || window.webkitAudioContext;
+                if (!ctx) ctx = new AC();
+                if (ctx.state === 'suspended') { ctx.resume(); }
+                try { var o = ctx.createOscillator(); var g = ctx.createGain(); g.gain.value = 0.001; o.connect(g); g.connect(ctx.destination); o.start(0); o.stop(ctx.currentTime + 0.05); } catch(err) {}
+                unlock.style.display = 'none';
+                document.removeEventListener('touchstart', doUnlock, true);
+                document.removeEventListener('touchend', doUnlock, true);
+                document.removeEventListener('click', doUnlock, true);
+            }
+            unlock.addEventListener('touchend', doUnlock);
+            unlock.addEventListener('click', doUnlock);
+            document.addEventListener('touchstart', doUnlock, true);
+            document.addEventListener('touchend', doUnlock, true);
+        })();
+    </script>
+</body>
+</html>
