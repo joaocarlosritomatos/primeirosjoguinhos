@@ -297,7 +297,7 @@
             // Feedback emoji
             const fb = document.createElement('div');
             fb.className = 'feedback';
-            const emojis = ['🎉', '⭐', '🌟', '👏', '🥳', '✨'];
+            const emojis = ['🥳', '😍', '🤩', '😆', '🥰', '😎', '🎉', '💪'];
             fb.textContent = emojis[Math.floor(Math.random() * emojis.length)];
             document.body.appendChild(fb);
             setTimeout(() => fb.remove(), 800);
@@ -312,6 +312,14 @@
             playWrong();
             btn.classList.add('wrong');
             setTimeout(() => btn.classList.remove('wrong'), 500);
+
+            // Sad emoji feedback
+            const fb = document.createElement('div');
+            fb.className = 'feedback';
+            const sadEmojis = ['😢', '😿', '🥺', '😔', '😣', '🙈'];
+            fb.textContent = sadEmojis[Math.floor(Math.random() * sadEmojis.length)];
+            document.body.appendChild(fb);
+            setTimeout(() => fb.remove(), 800);
         }
 
         function updateStars() {
