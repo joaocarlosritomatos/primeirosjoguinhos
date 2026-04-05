@@ -494,15 +494,19 @@
                 const yOff=Math.sin(a.wobble)*a.wobbleAmp;
                 a.y=a.baseY+yOff;
 
-                // Tilt: subtle, follows vertical direction
+                // Tilt: very subtle, only for small fish
                 const vertSpeed=Math.cos(a.wobble)*a.wobbleAmp*a.wobbleSpeed;
-                a.tiltTarget=vertSpeed*0.03*a.dir;
-                a.tilt+=(a.tiltTarget-a.tilt)*0.06;
-                // Extra tilt when paused (looking around)
-                if(a.isPaused) a.tilt=Math.sin(a.pauseDuration*0.1)*0.08;
+                if(a.size < 65) {
+                    a.tiltTarget=vertSpeed*0.02*a.dir;
+                    a.tilt+=(a.tiltTarget-a.tilt)*0.05;
+                    if(a.isPaused) a.tilt=Math.sin(a.pauseDuration*0.1)*0.06;
+                } else {
+                    // Big animals: no tilt, swim flat
+                    a.tilt=0;
+                }
 
                 // Tail wag effect via scaleX oscillation
-                const tailWag=1+Math.sin(a.wobble*3)*0.03*(a.isPaused?0.5:1);
+                const tailWag=1+Math.sin(a.wobble*3)*0.02*(a.isPaused?0.3:1);
                 // Scale breathing
                 const scalePulse=1+Math.sin(a.scalePhase)*0.04;
 
