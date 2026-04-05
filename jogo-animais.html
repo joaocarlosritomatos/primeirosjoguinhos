@@ -1172,12 +1172,6 @@
         document.addEventListener('gesturestart', e => e.preventDefault());
         document.addEventListener('dblclick', e => e.preventDefault());
 
-        // ========== SERVICE WORKER (PWA) ==========
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(() => console.log('SW registado!'))
-                .catch(err => console.log('SW erro:', err));
-        }
     </script>
 </body>
 </html>
