@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Aprende Ingles - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6c5ce7">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+        body {
+            overflow-x:hidden;
+            background:linear-gradient(135deg,#a29bfe 0%,#6c5ce7 50%,#5f27cd 100%);
+            min-height:100vh;min-height:100dvh;
+            font-family:'Segoe UI',sans-serif;
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:12px;
+        }
+        .home-btn {
+            position:fixed;top:12px;left:12px;z-index:20;
+            width:42px;height:42px;border-radius:50%;border:none;
+            background:rgba(255,255,255,0.2);font-size:20px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;text-decoration:none;
+        }
+        .score-bar {
+            position:fixed;top:14px;right:16px;z-index:20;
+            font-size:20px;font-weight:800;color:rgba(255,255,255,0.7);
+        }
+        .category-tabs {
+            display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
+            padding:0 12px;z-index:2;
+        }
+        .cat-tab {
+            padding:6px 14px;border:none;border-radius:16px;
+            font-size:clamp(11px,2.8vw,14px);font-weight:700;cursor:pointer;
+            background:rgba(255,255,255,0.2);color:white;transition:background 0.2s;
+        }
+        .cat-tab.active{background:rgba(255,255,255,0.5);color:#2d3436;}
+
+        .card-container {
+            position:relative;
+            width:clamp(260px,70vw,340px);
+            height:clamp(200px,50vw,260px);
+            perspective:800px;
+        }
+        .card {
+            width:100%;height:100%;
+            border-radius:24px;
+            background:white;
+            box-shadow:0 8px 30px rgba(0,0,0,0.2);
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:6px;
+            cursor:pointer;
+            transition:transform 0.15s;
+        }
+        .card:active{transform:scale(0.97);}
+        .card-emoji{font-size:clamp(60px,16vw,90px);line-height:1;}
+        .card-word-en{
+            font-size:clamp(28px,7vw,42px);font-weight:900;color:#2d3436;
+            letter-spacing:1px;
+        }
+        .card-word-pt{
+            font-size:clamp(14px,3.5vw,18px);font-weight:600;color:#b2bec3;
+        }
+        .card-listen{
+            font-size:clamp(11px,2.8vw,13px);color:#a29bfe;font-weight:700;
+            margin-top:2px;
+        }
+
+        .choices-grid {
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:10px;padding:0 20px;
+            max-width:380px;width:100%;
+        }
+        .choice {
+            padding:14px 10px;border:none;border-radius:18px;cursor:pointer;
+            font-size:clamp(13px,3.3vw,17px);font-weight:700;
+            background:rgba(255,255,255,0.15);color:white;
+            box-shadow:0 3px 10px rgba(0,0,0,0.1);
+            transition:transform 0.15s,background 0.2s;
+            display:flex;align-items:center;justify-content:center;
+            gap:8px;text-align:center;min-height:55px;
+        }
+        .choice:active{transform:scale(0.93);}
+        .choice.correct{background:#55efc4;color:#2d3436;animation:bounce-c 0.5s ease;}
+        .choice.wrong{background:#ff7675;animation:shake-w 0.4s ease;}
+        @keyframes bounce-c{0%{transform:scale(1)}30%{transform:scale(1.1)}100%{transform:scale(1)}}
+        @keyframes shake-w{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+        .progress-dots {
+            display:flex;gap:6px;
+        }
+        .dot {
+            width:10px;height:10px;border-radius:50%;
+            background:rgba(255,255,255,0.2);
+            transition:background 0.3s;
+        }
+        .dot.done{background:#55efc4;}
+        .dot.current{background:white;transform:scale(1.3);}
+
+        .feedback-big {
+            position:fixed;top:42%;left:50%;transform:translate(-50%,-50%);
+            font-size:clamp(60px,16vw,90px);pointer-events:none;z-index:100;
+            animation:fb-pop 0.8s ease-out forwards;
+        }
+        @keyframes fb-pop{
+            0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}
+            20%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}
+            40%{transform:translate(-50%,-50%) scale(1)}
+            70%{opacity:1}
+            100%{opacity:0;transform:translate(-50%,-60%) scale(1.1)}
+        }
+        .round-complete {
+            position:fixed;inset:0;z-index:50;
+            background:rgba(0,0,0,0.5);
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:12px;
+            opacity:0;pointer-events:none;transition:opacity 0.3s;
+        }
+        .round-complete.show{opacity:1;pointer-events:all;}
+        .rc-emoji{font-size:80px;}
+        .rc-text{font-size:clamp(22px,5.5vw,32px);font-weight:900;color:white;text-shadow:2px 2px 0 rgba(0,0,0,0.2);}
+        .rc-sub{font-size:clamp(14px,3.5vw,18px);color:rgba(255,255,255,0.7);font-weight:600;}
+        .rc-btn{
+            padding:12px 36px;border:none;border-radius:50px;
+            background:#55efc4;color:#2d3436;font-size:clamp(16px,4vw,20px);
+            font-weight:800;cursor:pointer;margin-top:8px;
+        }
+        .rc-btn:active{transform:scale(0.93);}
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">🏠</a>
+    <div class="score-bar">⭐ <span id="score">0</span></div>
+
+    <div class="category-tabs" id="tabs"></div>
+    <div class="card-container"><div class="card" id="card"><div class="card-emoji" id="cardEmoji"></div><div class="card-word-en" id="cardEn"></div><div class="card-word-pt" id="cardPt"></div><div class="card-listen" id="cardListen">🔊 Toca para ouvir</div></div></div>
+    <div class="progress-dots" id="dots"></div>
+    <div class="choices-grid" id="choices"></div>
+
+    <div class="round-complete" id="roundComplete">
+        <div class="rc-emoji">🏆</div>
+        <div class="rc-text" id="rcText">Fantastico!</div>
+        <div class="rc-sub" id="rcSub">Aprendeste 5 palavras!</div>
+        <button class="rc-btn" id="rcBtn">Continuar!</button>
+    </div>
+
+    <script>
+        // ===== TTS =====
+        function speak(text, lang) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = lang || 'en-US';
+                u.rate = 0.8;
+                u.pitch = 1.1;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // ===== AUDIO =====
+        const AudioCtx=window.AudioContext||window.webkitAudioContext;
+        let ctx;
+        function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        function playCorrect(){
+            ensureAudio();const t=ctx.currentTime;
+            [523,659,784].forEach((f,i)=>{
+                const o=ctx.createOscillator(),g=ctx.createGain();
+                o.type='sine';o.frequency.value=f;
+                g.gain.setValueAtTime(0.15,t+i*0.1);g.gain.exponentialRampToValueAtTime(0.001,t+i*0.1+0.25);
+                o.connect(g).connect(ctx.destination);o.start(t+i*0.1);o.stop(t+i*0.1+0.3);
+            });
+        }
+        function playWrong(){
+            ensureAudio();const t=ctx.currentTime;
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sawtooth';o.frequency.value=150;
+            g.gain.setValueAtTime(0.08,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+            o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.25);
+        }
+
+        function showFeedback(emoji){
+            const el=document.createElement('div');el.className='feedback-big';el.textContent=emoji;
+            document.body.appendChild(el);setTimeout(()=>el.remove(),800);
+        }
+
+        // ===== VOCABULARY =====
+        const categories = {
+            'Animais 🐾': [
+                {en:'Dog',pt:'Cao',emoji:'🐶'},
+                {en:'Cat',pt:'Gato',emoji:'🐱'},
+                {en:'Cow',pt:'Vaca',emoji:'🐮'},
+                {en:'Horse',pt:'Cavalo',emoji:'🐴'},
+                {en:'Pig',pt:'Porco',emoji:'🐷'},
+                {en:'Chicken',pt:'Galinha',emoji:'🐔'},
+                {en:'Duck',pt:'Pato',emoji:'🦆'},
+                {en:'Fish',pt:'Peixe',emoji:'🐟'},
+                {en:'Bird',pt:'Passaro',emoji:'🐦'},
+                {en:'Frog',pt:'Ra',emoji:'🐸'},
+                {en:'Lion',pt:'Leao',emoji:'🦁'},
+                {en:'Bear',pt:'Urso',emoji:'🐻'},
+                {en:'Monkey',pt:'Macaco',emoji:'🐒'},
+                {en:'Elephant',pt:'Elefante',emoji:'🐘'},
+                {en:'Rabbit',pt:'Coelho',emoji:'🐰'},
+            ],
+            'Cores 🎨': [
+                {en:'Red',pt:'Vermelho',emoji:'🔴'},
+                {en:'Blue',pt:'Azul',emoji:'🔵'},
+                {en:'Yellow',pt:'Amarelo',emoji:'🟡'},
+                {en:'Green',pt:'Verde',emoji:'🟢'},
+                {en:'Orange',pt:'Laranja',emoji:'🟠'},
+                {en:'Purple',pt:'Roxo',emoji:'🟣'},
+                {en:'Pink',pt:'Rosa',emoji:'🩷'},
+                {en:'White',pt:'Branco',emoji:'⚪'},
+                {en:'Black',pt:'Preto',emoji:'⚫'},
+                {en:'Brown',pt:'Castanho',emoji:'🟤'},
+            ],
+            'Frutas 🍎': [
+                {en:'Apple',pt:'Maca',emoji:'🍎'},
+                {en:'Banana',pt:'Banana',emoji:'🍌'},
+                {en:'Orange',pt:'Laranja',emoji:'🍊'},
+                {en:'Grape',pt:'Uva',emoji:'🍇'},
+                {en:'Strawberry',pt:'Morango',emoji:'🍓'},
+                {en:'Watermelon',pt:'Melancia',emoji:'🍉'},
+                {en:'Pineapple',pt:'Ananas',emoji:'🍍'},
+                {en:'Cherry',pt:'Cereja',emoji:'🍒'},
+                {en:'Peach',pt:'Pessego',emoji:'🍑'},
+                {en:'Lemon',pt:'Limao',emoji:'🍋'},
+            ],
+            'Corpo 🧍': [
+                {en:'Head',pt:'Cabeca',emoji:'😊'},
+                {en:'Hand',pt:'Mao',emoji:'✋'},
+                {en:'Eye',pt:'Olho',emoji:'👁️'},
+                {en:'Nose',pt:'Nariz',emoji:'👃'},
+                {en:'Mouth',pt:'Boca',emoji:'👄'},
+                {en:'Ear',pt:'Orelha',emoji:'👂'},
+                {en:'Foot',pt:'Pe',emoji:'🦶'},
+                {en:'Heart',pt:'Coracao',emoji:'❤️'},
+                {en:'Teeth',pt:'Dentes',emoji:'🦷'},
+                {en:'Arm',pt:'Braco',emoji:'💪'},
+            ],
+            'Numeros 🔢': [
+                {en:'One',pt:'Um',emoji:'1️⃣'},
+                {en:'Two',pt:'Dois',emoji:'2️⃣'},
+                {en:'Three',pt:'Tres',emoji:'3️⃣'},
+                {en:'Four',pt:'Quatro',emoji:'4️⃣'},
+                {en:'Five',pt:'Cinco',emoji:'5️⃣'},
+                {en:'Six',pt:'Seis',emoji:'6️⃣'},
+                {en:'Seven',pt:'Sete',emoji:'7️⃣'},
+                {en:'Eight',pt:'Oito',emoji:'8️⃣'},
+                {en:'Nine',pt:'Nove',emoji:'9️⃣'},
+                {en:'Ten',pt:'Dez',emoji:'🔟'},
+            ],
+            'Casa 🏠': [
+                {en:'House',pt:'Casa',emoji:'🏠'},
+                {en:'Door',pt:'Porta',emoji:'🚪'},
+                {en:'Window',pt:'Janela',emoji:'🪟'},
+                {en:'Bed',pt:'Cama',emoji:'🛏️'},
+                {en:'Chair',pt:'Cadeira',emoji:'🪑'},
+                {en:'Table',pt:'Mesa',emoji:'🪵'},
+                {en:'Book',pt:'Livro',emoji:'📖'},
+                {en:'Key',pt:'Chave',emoji:'🔑'},
+                {en:'Clock',pt:'Relogio',emoji:'🕐'},
+                {en:'Lamp',pt:'Lampada',emoji:'💡'},
+            ],
+            'Comida 🍕': [
+                {en:'Bread',pt:'Pao',emoji:'🍞'},
+                {en:'Milk',pt:'Leite',emoji:'🥛'},
+                {en:'Egg',pt:'Ovo',emoji:'🥚'},
+                {en:'Water',pt:'Agua',emoji:'💧'},
+                {en:'Cake',pt:'Bolo',emoji:'🎂'},
+                {en:'Cookie',pt:'Bolacha',emoji:'🍪'},
+                {en:'Pizza',pt:'Pizza',emoji:'🍕'},
+                {en:'Ice cream',pt:'Gelado',emoji:'🍦'},
+                {en:'Cheese',pt:'Queijo',emoji:'🧀'},
+                {en:'Rice',pt:'Arroz',emoji:'🍚'},
+            ],
+            'Familia 👨‍👩‍👧': [
+                {en:'Mom',pt:'Mae',emoji:'👩'},
+                {en:'Dad',pt:'Pai',emoji:'👨'},
+                {en:'Baby',pt:'Bebe',emoji:'👶'},
+                {en:'Brother',pt:'Irmao',emoji:'👦'},
+                {en:'Sister',pt:'Irma',emoji:'👧'},
+                {en:'Grandma',pt:'Avo',emoji:'👵'},
+                {en:'Grandpa',pt:'Avo',emoji:'👴'},
+                {en:'Friend',pt:'Amigo',emoji:'🤝'},
+                {en:'Boy',pt:'Menino',emoji:'👦'},
+                {en:'Girl',pt:'Menina',emoji:'👧'},
+            ],
+        };
+
+        let currentCat = Object.keys(categories)[0];
+        let currentWords = [];
+        let wordIndex = 0;
+        let score = 0;
+        let waiting = false;
+        const ROUND_SIZE = 5;
+
+        function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+        // Build tabs
+        function buildTabs(){
+            const tabsEl=document.getElementById('tabs');
+            tabsEl.innerHTML='';
+            Object.keys(categories).forEach(cat=>{
+                const btn=document.createElement('button');
+                btn.className='cat-tab'+(cat===currentCat?' active':'');
+                btn.textContent=cat;
+                btn.addEventListener('pointerdown',(e)=>{
+                    e.preventDefault();
+                    currentCat=cat;
+                    buildTabs();
+                    startRound();
+                });
+                tabsEl.appendChild(btn);
+            });
+        }
+
+        function startRound(){
+            wordIndex=0;
+            waiting=false;
+            document.getElementById('roundComplete').classList.remove('show');
+            currentWords=shuffle(categories[currentCat]).slice(0,ROUND_SIZE);
+            buildDots();
+            showWord();
+        }
+
+        function buildDots(){
+            const dotsEl=document.getElementById('dots');
+            dotsEl.innerHTML='';
+            for(let i=0;i<ROUND_SIZE;i++){
+                const d=document.createElement('div');
+                d.className='dot'+(i<wordIndex?' done':'')+(i===wordIndex?' current':'');
+                dotsEl.appendChild(d);
+            }
+        }
+
+        function showWord(){
+            if(wordIndex>=currentWords.length){
+                // Round complete!
+                const texts=['Fantastico!','Muito bem!','Genial!','Incrivel!','Boa!'];
+                document.getElementById('rcText').textContent=texts[Math.floor(Math.random()*texts.length)];
+                document.getElementById('rcSub').textContent=`Aprendeste ${ROUND_SIZE} palavras novas!`;
+                document.getElementById('roundComplete').classList.add('show');
+                return;
+            }
+
+            waiting=false;
+            const word=currentWords[wordIndex];
+
+            document.getElementById('cardEmoji').textContent=word.emoji;
+            document.getElementById('cardEn').textContent=word.en;
+            document.getElementById('cardPt').textContent=word.pt;
+
+            // Speak on card tap
+            const card=document.getElementById('card');
+            card.onclick=()=>speak(word.en,'en-US');
+
+            // Auto speak
+            setTimeout(()=>speak(word.en,'en-US'),300);
+
+            // Generate choices: "What does X mean?"
+            // Pick 3 wrong PT translations
+            const allWords=categories[currentCat];
+            const wrongWords=shuffle(allWords.filter(w=>w.en!==word.en)).slice(0,3);
+            const options=shuffle([
+                {text:word.pt,emoji:word.emoji,correct:true},
+                ...wrongWords.map(w=>({text:w.pt,emoji:w.emoji,correct:false}))
+            ]);
+
+            const choicesEl=document.getElementById('choices');
+            choicesEl.innerHTML='';
+            options.forEach(opt=>{
+                const btn=document.createElement('button');
+                btn.className='choice';
+                btn.innerHTML=`<span>${opt.emoji}</span> <span>${opt.text}</span>`;
+                btn.addEventListener('pointerdown',(e)=>{
+                    e.preventDefault();
+                    if(waiting)return;
+                    if(opt.correct){
+                        waiting=true;
+                        btn.classList.add('correct');
+                        playCorrect();
+                        score++;
+                        document.getElementById('score').textContent=score;
+                        showFeedback(['🎉','⭐','👏','✨','🌟'][Math.floor(Math.random()*5)]);
+                        // Speak the word again
+                        setTimeout(()=>speak(word.en,'en-US'),300);
+                        wordIndex++;
+                        buildDots();
+                        setTimeout(showWord,1200);
+                    }else{
+                        playWrong();
+                        btn.classList.add('wrong');
+                        setTimeout(()=>btn.classList.remove('wrong'),400);
+                    }
+                });
+                choicesEl.appendChild(btn);
+            });
+        }
+
+        document.getElementById('rcBtn').addEventListener('pointerdown',(e)=>{
+            e.preventDefault();
+            startRound();
+        });
+
+        buildTabs();
+        startRound();
+
+        document.addEventListener('gesturestart',e=>e.preventDefault());
+        document.addEventListener('dblclick',e=>e.preventDefault());
+    </script>
+</body>
+</html>
