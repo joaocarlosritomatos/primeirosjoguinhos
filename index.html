@@ -90,17 +90,17 @@
             position: relative;
             z-index: 1;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 18px;
-            padding: 30px 20px;
-            max-width: 600px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 20px;
+            max-width: 700px;
             width: 100%;
         }
 
         .game-card {
             background: rgba(255,255,255,0.85);
-            border-radius: 24px;
-            padding: 24px 16px 18px;
+            border-radius: 28px;
+            padding: 30px 16px 24px;
             text-align: center;
             text-decoration: none;
             color: #333;
@@ -110,7 +110,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            min-height: clamp(140px, 35vw, 200px);
+            justify-content: center;
         }
 
         .game-card:hover, .game-card:active {
@@ -119,18 +121,18 @@
         }
 
         .game-card .card-emoji {
-            font-size: clamp(45px, 11vw, 65px);
+            font-size: clamp(55px, 14vw, 80px);
             line-height: 1;
         }
 
         .game-card .card-title {
-            font-size: clamp(14px, 3.5vw, 18px);
+            font-size: clamp(16px, 4vw, 22px);
             font-weight: 800;
             color: #444;
         }
 
         .game-card .card-age {
-            font-size: clamp(10px, 2.5vw, 13px);
+            font-size: clamp(11px, 2.8vw, 15px);
             color: #999;
             font-weight: 600;
         }
