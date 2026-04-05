@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Primeiros Numeros - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ffeaa7">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+        body {
+            overflow:hidden;
+            background:linear-gradient(135deg,#ffeaa7 0%,#fdcb6e 50%,#f9ca24 100%);
+            min-height:100vh;min-height:100dvh;
+            font-family:'Segoe UI',sans-serif;
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:16px;
+        }
+        .home-btn {
+            position:fixed;top:12px;left:12px;z-index:20;
+            width:42px;height:42px;border-radius:50%;border:none;
+            background:rgba(255,255,255,0.5);font-size:20px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;text-decoration:none;
+        }
+        .score-bar {
+            position:fixed;top:14px;right:16px;z-index:20;
+            font-size:20px;font-weight:800;color:rgba(0,0,0,0.4);
+        }
+        .mode-tabs {
+            display:flex;gap:8px;z-index:2;
+        }
+        .mode-tab {
+            padding:8px 18px;border:none;border-radius:20px;
+            font-size:clamp(12px,3vw,16px);font-weight:700;cursor:pointer;
+            background:rgba(255,255,255,0.4);color:#2d3436;transition:background 0.2s;
+        }
+        .mode-tab.active{background:rgba(255,255,255,0.85);}
+
+        /* Counting mode */
+        .count-area {
+            text-align:center;padding:10px 20px;
+        }
+        .count-question {
+            font-size:clamp(18px,4.5vw,26px);font-weight:800;color:#2d3436;
+            margin-bottom:12px;
+        }
+        .count-items {
+            font-size:clamp(36px,9vw,55px);line-height:1.4;
+            margin-bottom:16px;letter-spacing:6px;
+        }
+        .count-choices {
+            display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+        }
+        .count-btn {
+            width:clamp(60px,16vw,80px);height:clamp(60px,16vw,80px);
+            border-radius:18px;border:none;cursor:pointer;
+            font-size:clamp(28px,7vw,40px);font-weight:900;
+            background:white;color:#2d3436;
+            box-shadow:0 4px 12px rgba(0,0,0,0.1);
+            transition:transform 0.15s;
+        }
+        .count-btn:active{transform:scale(0.9);}
+        .count-btn.correct{animation:bounce-correct 0.5s ease;background:#55efc4;}
+        .count-btn.wrong{animation:shake-wrong 0.4s ease;background:#ff7675;}
+        @keyframes bounce-correct{0%{transform:scale(1)}30%{transform:scale(1.2)}100%{transform:scale(1)}}
+        @keyframes shake-wrong{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+        /* Order mode */
+        .order-area { text-align:center;padding:10px 20px; }
+        .order-question {
+            font-size:clamp(18px,4.5vw,26px);font-weight:800;color:#2d3436;
+            margin-bottom:12px;
+        }
+        .order-slots {
+            display:flex;gap:8px;justify-content:center;margin-bottom:18px;flex-wrap:wrap;
+        }
+        .order-slot {
+            width:clamp(50px,13vw,65px);height:clamp(50px,13vw,65px);
+            border-radius:14px;border:3px dashed rgba(0,0,0,0.15);
+            background:rgba(255,255,255,0.4);
+            display:flex;align-items:center;justify-content:center;
+            font-size:clamp(22px,6vw,32px);font-weight:900;color:#2d3436;
+            transition:background 0.2s,border 0.2s;
+        }
+        .order-slot.filled{border:3px solid rgba(0,0,0,0.08);background:rgba(255,255,255,0.8);}
+        .order-slot.next{border-color:#0984e3;background:rgba(9,132,227,0.1);}
+        .order-pieces {
+            display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+        }
+        .order-btn {
+            width:clamp(50px,13vw,65px);height:clamp(50px,13vw,65px);
+            border-radius:14px;border:none;cursor:pointer;
+            font-size:clamp(22px,6vw,32px);font-weight:900;
+            background:white;color:#2d3436;
+            box-shadow:0 4px 10px rgba(0,0,0,0.1);
+            transition:transform 0.15s,opacity 0.3s;
+        }
+        .order-btn:active{transform:scale(0.9);}
+        .order-btn.used{opacity:0.2;pointer-events:none;transform:scale(0.8);}
+
+        .feedback-big {
+            position:fixed;top:45%;left:50%;transform:translate(-50%,-50%);
+            font-size:clamp(60px,16vw,90px);pointer-events:none;z-index:100;
+            animation:fb-pop 0.8s ease-out forwards;
+        }
+        @keyframes fb-pop{
+            0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}
+            20%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}
+            40%{transform:translate(-50%,-50%) scale(1)}
+            70%{opacity:1}
+            100%{opacity:0;transform:translate(-50%,-60%) scale(1.1)}
+        }
+        .hidden{display:none!important;}
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">🏠</a>
+    <div class="score-bar">⭐ <span id="score">0</span></div>
+
+    <div class="mode-tabs">
+        <button class="mode-tab active" id="tabCount" onclick="setMode('count')">Contar</button>
+        <button class="mode-tab" id="tabOrder" onclick="setMode('order')">Ordenar</button>
+    </div>
+
+    <!-- COUNTING MODE -->
+    <div class="count-area" id="countArea">
+        <div class="count-question" id="countQ"></div>
+        <div class="count-items" id="countItems"></div>
+        <div class="count-choices" id="countChoices"></div>
+    </div>
+
+    <!-- ORDER MODE -->
+    <div class="order-area hidden" id="orderArea">
+        <div class="order-question" id="orderQ"></div>
+        <div class="order-slots" id="orderSlots"></div>
+        <div class="order-pieces" id="orderPieces"></div>
+    </div>
+
+    <script>
+        const AudioCtx=window.AudioContext||window.webkitAudioContext;
+        let ctx;
+        function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        function playCorrect(){
+            ensureAudio();const t=ctx.currentTime;
+            [523,659,784].forEach((f,i)=>{
+                const o=ctx.createOscillator(),g=ctx.createGain();
+                o.type='sine';o.frequency.value=f;
+                g.gain.setValueAtTime(0.18,t+i*0.1);g.gain.exponentialRampToValueAtTime(0.001,t+i*0.1+0.25);
+                o.connect(g).connect(ctx.destination);o.start(t+i*0.1);o.stop(t+i*0.1+0.3);
+            });
+        }
+        function playWrong(){
+            ensureAudio();const t=ctx.currentTime;
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sawtooth';o.frequency.value=150;
+            g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+            o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.25);
+        }
+        function playClick(){
+            ensureAudio();const t=ctx.currentTime;
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sine';o.frequency.value=600;
+            g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+            o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.15);
+        }
+
+        function showFeedback(emoji){
+            const el=document.createElement('div');
+            el.className='feedback-big';el.textContent=emoji;
+            document.body.appendChild(el);
+            setTimeout(()=>el.remove(),800);
+        }
+
+        const itemSets=[
+            ['🍎','🍎'],['🌟','🌟'],['🐟','🐟'],['🎈','🎈'],
+            ['🍒','🍒'],['🦋','🦋'],['🐥','🐥'],['🌺','🌺'],
+            ['🍩','🍩'],['🚗','🚗'],['⚽','⚽'],['🎵','🎵'],
+        ];
+
+        let mode='count';
+        let score=0;
+        let waiting=false;
+
+        function setMode(m){
+            mode=m;
+            document.getElementById('tabCount').classList.toggle('active',m==='count');
+            document.getElementById('tabOrder').classList.toggle('active',m==='order');
+            document.getElementById('countArea').classList.toggle('hidden',m!=='count');
+            document.getElementById('orderArea').classList.toggle('hidden',m!=='order');
+            if(m==='count')newCountRound();
+            else newOrderRound();
+        }
+
+        function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+
+        // ===== COUNTING MODE =====
+        function newCountRound(){
+            waiting=false;
+            const count=1+Math.floor(Math.random()*8); // 1-8
+            const set=itemSets[Math.floor(Math.random()*itemSets.length)];
+            const emoji=set[0];
+
+            document.getElementById('countQ').textContent='Quantos ha?';
+            document.getElementById('countItems').textContent=emoji.repeat(count);
+
+            // Generate 4 choices, one correct
+            const choices=new Set([count]);
+            while(choices.size<4){
+                let wrong=count+Math.floor(Math.random()*5)-2;
+                if(wrong<1)wrong=count+Math.floor(Math.random()*3)+1;
+                if(wrong>9)wrong=count-Math.floor(Math.random()*3)-1;
+                if(wrong>=1&&wrong<=9)choices.add(wrong);
+            }
+
+            const choicesEl=document.getElementById('countChoices');
+            choicesEl.innerHTML='';
+            shuffle([...choices]).forEach(num=>{
+                const btn=document.createElement('button');
+                btn.className='count-btn';
+                btn.textContent=num;
+                btn.addEventListener('pointerdown',(e)=>{
+                    e.preventDefault();
+                    if(waiting)return;
+                    if(num===count){
+                        waiting=true;
+                        btn.classList.add('correct');
+                        playCorrect();
+                        score++;
+                        document.getElementById('score').textContent=score;
+                        showFeedback(['🎉','⭐','👏','🌟'][Math.floor(Math.random()*4)]);
+                        setTimeout(newCountRound,1000);
+                    }else{
+                        playWrong();
+                        btn.classList.add('wrong');
+                        setTimeout(()=>btn.classList.remove('wrong'),400);
+                    }
+                });
+                choicesEl.appendChild(btn);
+            });
+        }
+
+        // ===== ORDER MODE =====
+        let orderTarget=[];
+        let orderPlaced=0;
+
+        function newOrderRound(){
+            waiting=false;
+            orderPlaced=0;
+            // Random start, length 4-6
+            const len=4+Math.floor(Math.random()*3);
+            const start=1+Math.floor(Math.random()*(10-len));
+            orderTarget=[];
+            for(let i=0;i<len;i++)orderTarget.push(start+i);
+
+            document.getElementById('orderQ').textContent=`Ordena de ${start} a ${start+len-1}!`;
+
+            const slotsEl=document.getElementById('orderSlots');
+            slotsEl.innerHTML='';
+            orderTarget.forEach((_,i)=>{
+                const slot=document.createElement('div');
+                slot.className='order-slot'+(i===0?' next':'');
+                slot.dataset.index=i;
+                slotsEl.appendChild(slot);
+            });
+
+            const piecesEl=document.getElementById('orderPieces');
+            piecesEl.innerHTML='';
+            shuffle(orderTarget).forEach(num=>{
+                const btn=document.createElement('button');
+                btn.className='order-btn';
+                btn.textContent=num;
+                btn.addEventListener('pointerdown',(e)=>{
+                    e.preventDefault();
+                    if(waiting||btn.classList.contains('used'))return;
+                    if(num===orderTarget[orderPlaced]){
+                        // Correct position
+                        playClick();
+                        btn.classList.add('used');
+                        const slots=document.querySelectorAll('.order-slot');
+                        slots[orderPlaced].textContent=num;
+                        slots[orderPlaced].classList.add('filled');
+                        slots[orderPlaced].classList.remove('next');
+                        orderPlaced++;
+                        if(orderPlaced<orderTarget.length){
+                            slots[orderPlaced].classList.add('next');
+                        }else{
+                            // Complete!
+                            waiting=true;
+                            score+=2;
+                            document.getElementById('score').textContent=score;
+                            playCorrect();
+                            showFeedback('🎉');
+                            setTimeout(newOrderRound,1200);
+                        }
+                    }else{
+                        playWrong();
+                        btn.classList.add('wrong');
+                        setTimeout(()=>btn.classList.remove('wrong'),400);
+                    }
+                });
+                piecesEl.appendChild(btn);
+            });
+        }
+
+        newCountRound();
+
+        document.addEventListener('gesturestart',e=>e.preventDefault());
+        document.addEventListener('dblclick',e=>e.preventDefault());
+    </script>
+</body>
+</html>

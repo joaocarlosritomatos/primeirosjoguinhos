@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Puzzle Simples - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#dfe6e9">
+    <style>
+        * { margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none; }
+        body {
+            overflow: hidden;
+            background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
+            min-height: 100vh; min-height: 100dvh;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 14px;
+        }
+        .home-btn {
+            position:fixed;top:12px;left:12px;z-index:20;
+            width:42px;height:42px;border-radius:50%;border:none;
+            background:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;text-decoration:none;
+            box-shadow:0 2px 8px rgba(0,0,0,0.1);
+        }
+        .level-bar {
+            position:fixed;top:14px;right:16px;z-index:20;
+            font-size:clamp(16px,4vw,22px);font-weight:800;
+            color:rgba(0,0,0,0.5);
+        }
+        .hint-text {
+            font-size:clamp(16px,4vw,22px);font-weight:800;
+            color:rgba(0,0,0,0.4);text-align:center;padding:0 20px;
+        }
+        .puzzle-area {
+            position: relative;
+            background: rgba(255,255,255,0.5);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            display: grid;
+            gap: 4px;
+            padding: 8px;
+        }
+        .puzzle-slot {
+            border-radius: 12px;
+            background: rgba(0,0,0,0.06);
+            border: 3px dashed rgba(0,0,0,0.12);
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(30px,8vw,50px);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .puzzle-slot.highlight {
+            border-color: #55efc4;
+            background: rgba(85,239,196,0.15);
+        }
+        .puzzle-slot.filled {
+            border: 3px solid rgba(0,0,0,0.05);
+            background: rgba(255,255,255,0.7);
+        }
+        .pieces-tray {
+            display: flex; flex-wrap: wrap;
+            gap: 10px; justify-content: center;
+            padding: 10px 20px; max-width: 400px;
+        }
+        .piece {
+            width: clamp(55px,14vw,75px); height: clamp(55px,14vw,75px);
+            border-radius: 14px; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(28px,7vw,42px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transition: transform 0.15s, opacity 0.3s;
+            background: white;
+        }
+        .piece:active { transform: scale(0.9); }
+        .piece.used { opacity: 0.2; pointer-events: none; transform: scale(0.8); }
+        .piece.wrong { animation: shake 0.4s ease; }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-8px)}
+            40%{transform:translateX(8px)}
+            60%{transform:translateX(-5px)}
+            80%{transform:translateX(5px)}
+        }
+        .celebration {
+            position:fixed;pointer-events:none;z-index:100;
+            font-size:30px;animation:confetti-up 1.5s ease-out forwards;
+        }
+        @keyframes confetti-up {
+            0%{opacity:1;transform:translateY(0) scale(1) rotate(0)}
+            100%{opacity:0;transform:translateY(-150px) scale(0.5) rotate(360deg)}
+        }
+        .overlay {
+            position:fixed;inset:0;z-index:50;
+            background:rgba(0,0,0,0.4);
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:12px;
+            opacity:0;pointer-events:none;transition:opacity 0.3s;
+        }
+        .overlay.show{opacity:1;pointer-events:all}
+        .overlay-emoji{font-size:clamp(60px,16vw,90px)}
+        .overlay-text{font-size:clamp(22px,5.5vw,34px);font-weight:900;color:white;text-shadow:2px 2px 0 rgba(0,0,0,0.2)}
+        .next-btn {
+            padding:12px 36px;border:none;border-radius:50px;
+            background:#55efc4;color:#2d3436;font-size:clamp(16px,4vw,22px);
+            font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);
+        }
+        .next-btn:active{transform:scale(0.93)}
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">🏠</a>
+    <div class="level-bar" id="levelBar">Nivel 1</div>
+    <div class="hint-text" id="hint">Coloca cada peca no sitio certo!</div>
+    <div class="puzzle-area" id="puzzleArea"></div>
+    <div class="pieces-tray" id="tray"></div>
+    <div class="overlay" id="winOverlay">
+        <div class="overlay-emoji">🎉</div>
+        <div class="overlay-text" id="winText">Muito bem!</div>
+        <button class="next-btn" id="nextBtn">Proximo!</button>
+    </div>
+
+    <script>
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let ctx;
+        function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        function playPlace(){
+            ensureAudio();const t=ctx.currentTime;
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.linearRampToValueAtTime(800,t+0.1);
+            g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+            o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.25);
+        }
+        function playWin(){
+            ensureAudio();const t=ctx.currentTime;
+            [523,659,784,1047].forEach((f,i)=>{
+                const o=ctx.createOscillator(),g=ctx.createGain();
+                o.type='sine';o.frequency.value=f;
+                g.gain.setValueAtTime(0.2,t+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,t+i*0.12+0.4);
+                o.connect(g).connect(ctx.destination);o.start(t+i*0.12);o.stop(t+i*0.12+0.45);
+            });
+        }
+        function playWrong(){
+            ensureAudio();const t=ctx.currentTime;
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.type='sawtooth';o.frequency.value=150;
+            g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+            o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.25);
+        }
+
+        // Puzzle themes
+        const themes = [
+            { name: 'Animais', items: ['🐶','🐱','🐮','🐷'], cols: 2 },
+            { name: 'Frutas', items: ['🍎','🍌','🍇','🍊'], cols: 2 },
+            { name: 'Oceano', items: ['🐟','🐙','🦀','🐳','🐬','🦈'], cols: 3 },
+            { name: 'Quinta', items: ['🐔','🐴','🐑','🐐','🐮','🐷'], cols: 3 },
+            { name: 'Transportes', items: ['🚗','🚌','🚀','✈️','🚂','🚢','🚁','🏍️','🚲'], cols: 3 },
+            { name: 'Comida', items: ['🍕','🍔','🌮','🍩','🧁','🍪','🍿','🎂','🍰'], cols: 3 },
+            { name: 'Natureza', items: ['🌸','🌻','🌈','⭐','🌙','☀️','🍄','🌴','🦋'], cols: 3 },
+            { name: 'Desporto', items: ['⚽','🏀','🎾','🏈','⚾','🎱','🏓','🏐','🎯'], cols: 3 },
+        ];
+
+        let level = 0;
+        let selectedPiece = null;
+        let placed = 0;
+
+        function shuffle(arr){
+            const a=[...arr];
+            for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+            return a;
+        }
+
+        function spawnCelebration(){
+            const emojis=['🎉','⭐','✨','🌟','🎊','💫'];
+            for(let i=0;i<12;i++){
+                const el=document.createElement('div');
+                el.className='celebration';
+                el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+                el.style.left=Math.random()*100+'vw';
+                el.style.top=(40+Math.random()*30)+'vh';
+                el.style.animationDelay=(Math.random()*0.4)+'s';
+                document.body.appendChild(el);
+                setTimeout(()=>el.remove(),1500);
+            }
+        }
+
+        function loadLevel(){
+            const theme = themes[level % themes.length];
+            const puzzleArea = document.getElementById('puzzleArea');
+            const tray = document.getElementById('tray');
+            placed = 0;
+            selectedPiece = null;
+
+            document.getElementById('levelBar').textContent = `Nivel ${level+1}`;
+            document.getElementById('hint').textContent = `${theme.name} - coloca cada peca!`;
+            document.getElementById('winOverlay').classList.remove('show');
+
+            const rows = Math.ceil(theme.items.length / theme.cols);
+            const cellSize = Math.min(
+                (window.innerWidth - 60) / theme.cols,
+                (window.innerHeight * 0.4) / rows,
+                90
+            );
+
+            puzzleArea.style.gridTemplateColumns = `repeat(${theme.cols}, ${cellSize}px)`;
+            puzzleArea.innerHTML = '';
+            tray.innerHTML = '';
+
+            // Create slots
+            theme.items.forEach((emoji, i) => {
+                const slot = document.createElement('div');
+                slot.className = 'puzzle-slot';
+                slot.style.width = cellSize + 'px';
+                slot.style.height = cellSize + 'px';
+                slot.dataset.emoji = emoji;
+                slot.dataset.index = i;
+
+                slot.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    if (selectedPiece && selectedPiece.emoji === emoji) {
+                        // Correct!
+                        slot.textContent = emoji;
+                        slot.classList.add('filled');
+                        slot.classList.remove('highlight');
+                        selectedPiece.el.classList.add('used');
+                        playPlace();
+                        placed++;
+                        selectedPiece = null;
+                        clearHighlights();
+
+                        if (placed === theme.items.length) {
+                            // Level complete!
+                            setTimeout(() => {
+                                playWin();
+                                spawnCelebration();
+                                const texts = ['Muito bem!','Genial!','Fantastico!','Boa!','Incrivel!'];
+                                document.getElementById('winText').textContent = texts[Math.floor(Math.random()*texts.length)];
+                                document.getElementById('winOverlay').classList.add('show');
+                            }, 400);
+                        }
+                    } else if (selectedPiece) {
+                        // Wrong slot
+                        playWrong();
+                        slot.classList.add('highlight');
+                        setTimeout(() => slot.classList.remove('highlight'), 300);
+                    }
+                });
+
+                puzzleArea.appendChild(slot);
+            });
+
+            // Create shuffled pieces
+            const shuffled = shuffle(theme.items);
+            shuffled.forEach((emoji) => {
+                const piece = document.createElement('button');
+                piece.className = 'piece';
+                piece.textContent = emoji;
+
+                piece.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    if (piece.classList.contains('used')) return;
+
+                    // Deselect previous
+                    document.querySelectorAll('.piece').forEach(p => p.style.outline = '');
+                    clearHighlights();
+
+                    // Select this piece
+                    piece.style.outline = '3px solid #0984e3';
+                    piece.style.outlineOffset = '2px';
+                    selectedPiece = { emoji, el: piece };
+
+                    // Highlight matching slot
+                    document.querySelectorAll('.puzzle-slot').forEach(s => {
+                        if (s.dataset.emoji === emoji && !s.classList.contains('filled')) {
+                            s.classList.add('highlight');
+                        }
+                    });
+                });
+
+                tray.appendChild(piece);
+            });
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.puzzle-slot').forEach(s => s.classList.remove('highlight'));
+        }
+
+        document.getElementById('nextBtn').addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            level++;
+            loadLevel();
+        });
+
+        loadLevel();
+
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('dblclick', e => e.preventDefault());
+    </script>
+</body>
+</html>
