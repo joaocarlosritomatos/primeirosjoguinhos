@@ -89,107 +89,473 @@
             });
         }
 
-        // Sound effects per category
+        // Noise helper
+        function noise(dur,freq,Q,vol,t0){
+            const n=ctx.createBufferSource();const buf=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+            const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+            n.buffer=buf;const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=freq;f.Q.value=Q;
+            const g=ctx.createGain();g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(0.001,t0+dur);
+            n.connect(f).connect(g).connect(ctx.destination);n.start(t0);n.stop(t0+dur+0.01);
+        }
+        // Osc helper
+        function osc(type,fEnv,gEnv,t0,dur){
+            const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;
+            o.frequency.setValueAtTime(fEnv[0][1],t0+fEnv[0][0]);
+            for(let i=1;i<fEnv.length;i++)o.frequency.linearRampToValueAtTime(fEnv[i][1],t0+fEnv[i][0]);
+            g.gain.setValueAtTime(gEnv[0][1],t0+gEnv[0][0]);
+            for(let i=1;i<gEnv.length;i++)g.gain.linearRampToValueAtTime(gEnv[i][1],t0+gEnv[i][0]);
+            o.connect(g).connect(ctx.destination);o.start(t0);o.stop(t0+dur);
+        }
+
+        // Realistic sound effects
         const soundFX = {
-            // Simple fun sounds
-            ding:    () => playSound([[800,1200],[1000,1400]], 'sine', 0.15),
-            knock:   () => playSound([[200,100],[180,90]], 'triangle', 0.08),
-            swoosh:  () => playSound([[400,800],[600,300]], 'sawtooth', 0.12),
-            pop:     () => playSound([[600,900]], 'sine', 0.1),
-            ring:    () => playSound([[800,600],[1000,800],[1200,1000]], 'sine', 0.12),
-            splash:  () => { ensureAudio(); const t=ctx.currentTime; const n=ctx.createBufferSource(); const buf=ctx.createBuffer(1,ctx.sampleRate*0.2,ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/d.length*5); n.buffer=buf; const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=800;f.Q.value=2; const g=ctx.createGain();g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3); n.connect(f).connect(g).connect(ctx.destination);n.start(t);},
-            beep:    () => playSound([[523],[659],[784]], 'square', 0.08),
-            vroom:   () => playSound([[100,200],[150,300],[200,150]], 'sawtooth', 0.15),
-            chomp:   () => playSound([[300,150],[250,100]], 'square', 0.08),
-            click:   () => playSound([[1200,800]], 'sine', 0.05),
-            bounce:  () => playSound([[400,600],[300,500]], 'sine', 0.1),
-            twinkle: () => playSound([[1000,1500],[1200,1800],[1500,2000]], 'sine', 0.1),
+            // Door knock - two thumps on wood
+            knock() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<2;i++){
+                    const s=t+i*0.2;
+                    osc('triangle',[[0,180],[0.02,100],[0.06,60]],[[0,0.4],[0.02,0.3],[0.08,0]],s,0.1);
+                    noise(0.06,800,3,0.2,s);
+                }
+            },
+            // Window sliding open
+            window_open() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.5,2000,1,0.15,t);
+                osc('sine',[[0,300],[0.3,500],[0.5,400]],[[0,0],[0.05,0.08],[0.3,0.06],[0.5,0]],t,0.55);
+            },
+            // Light switch click
+            light_click() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('square',[[0,2000],[0.01,800]],[[0,0.3],[0.01,0.2],[0.04,0]],t,0.05);
+                noise(0.03,5000,8,0.15,t);
+            },
+            // Snoring / sleeping
+            snore() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<2;i++){
+                    const s=t+i*0.6;
+                    osc('sawtooth',[[0,80],[0.2,120],[0.4,80]],[[0,0],[0.05,0.1],[0.2,0.08],[0.4,0]],s,0.45);
+                    noise(0.35,200,2,0.06,s+0.05);
+                }
+            },
+            // Chair creak
+            chair() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,300],[0.05,350],[0.15,280]],[[0,0.15],[0.05,0.12],[0.2,0]],t,0.22);
+                osc('sine',[[0,600],[0.05,700],[0.15,560]],[[0,0.04],[0.05,0.03],[0.2,0]],t,0.22);
+            },
+            // Shower water
+            shower() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.8,3000,1,0.2,t);
+                noise(0.8,6000,2,0.1,t);
+                noise(0.6,1000,1.5,0.08,t+0.1);
+            },
+            // TV turn on beep
+            tv_on() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,800],[0.05,1000]],[[0,0],[0.01,0.2],[0.05,0.15],[0.15,0]],t,0.18);
+                noise(0.3,2000,1,0.05,t+0.05);
+            },
+            // Keys jingling
+            keys() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<4;i++){
+                    const s=t+i*0.08;
+                    osc('sine',[[0,3000+i*500],[0.05,2000+i*300]],[[0,0.1],[0.02,0.08],[0.06,0]],s,0.08);
+                }
+            },
+            // Clock ticking
+            clock() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<4;i++){
+                    osc('sine',[[0,1800],[0.01,1200]],[[0,0.15],[0.01,0.1],[0.03,0]],t+i*0.3,0.04);
+                }
+            },
+            // Plate/dish ding
+            plate() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,1200],[0.3,1000]],[[0,0.2],[0.05,0.15],[0.4,0]],t,0.45);
+                osc('sine',[[0,2400],[0.3,2000]],[[0,0.06],[0.05,0.04],[0.3,0]],t,0.35);
+            },
+            // Spoon clinking
+            spoon() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,2500],[0.1,2000]],[[0,0.15],[0.02,0.12],[0.12,0]],t,0.15);
+                osc('sine',[[0,5000],[0.1,4000]],[[0,0.04],[0.02,0.03],[0.1,0]],t,0.12);
+            },
+            // Frying sizzle
+            sizzle() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.7,4000,2,0.2,t);
+                noise(0.5,8000,3,0.08,t+0.1);
+            },
+            // Ice crack
+            ice() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('square',[[0,3000],[0.02,500]],[[0,0.2],[0.02,0.1],[0.05,0]],t,0.06);
+                noise(0.08,6000,5,0.15,t);
+            },
+            // Sipping tea
+            sip() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.2,1500,3,0.12,t);
+                osc('sine',[[0,400],[0.15,300]],[[0,0],[0.02,0.05],[0.15,0]],t,0.18);
+            },
+            // Pouring water
+            pour() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.6,1500,2,0.15,t);
+                for(let i=0;i<5;i++) osc('sine',[[0,400+i*50],[0.05,350+i*30]],[[0,0.03],[0.03,0.02],[0.06,0]],t+i*0.1,0.08);
+            },
+            // Bottle pop
+            bottle_pop() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,300],[0.01,800]],[[0,0.3],[0.01,0.2],[0.06,0]],t,0.08);
+                noise(0.05,3000,5,0.2,t+0.01);
+            },
+            // Sponge squeeze
+            sponge() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.3,800,2,0.12,t);
+                osc('sine',[[0,200],[0.2,300]],[[0,0],[0.05,0.04],[0.2,0]],t,0.25);
+            },
+            // Zipper
+            zipper() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<8;i++){
+                    osc('square',[[0,2000+i*200],[0.02,1500+i*150]],[[0,0.06],[0.01,0.04],[0.03,0]],t+i*0.04,0.04);
+                }
+            },
+            // Shoes tap
+            shoes() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<3;i++){
+                    osc('triangle',[[0,250],[0.02,150]],[[0,0.3],[0.02,0.15],[0.06,0]],t+i*0.22,0.08);
+                    noise(0.04,1500,4,0.12,t+i*0.22);
+                }
+            },
+            // Snap elastic
+            snap() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,1500],[0.01,600]],[[0,0.25],[0.01,0.15],[0.05,0]],t,0.06);
+            },
+            // Hat plop
+            plop() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,400],[0.05,200]],[[0,0.2],[0.05,0.1],[0.15,0]],t,0.18);
+            },
+            // Car engine
+            car() {
+                ensureAudio(); const t=ctx.currentTime;
+                const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain();
+                o.type='sawtooth';o2.type='sawtooth';
+                o.frequency.setValueAtTime(80,t);o.frequency.linearRampToValueAtTime(150,t+0.3);
+                o.frequency.linearRampToValueAtTime(200,t+0.6);o.frequency.linearRampToValueAtTime(120,t+1);
+                o2.frequency.setValueAtTime(82,t);o2.frequency.linearRampToValueAtTime(153,t+0.3);
+                g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.15,t+0.1);
+                g.gain.setValueAtTime(0.15,t+0.7);g.gain.linearRampToValueAtTime(0,t+1);
+                o.connect(g).connect(ctx.destination);o2.connect(g);
+                o.start(t);o2.start(t);o.stop(t+1.05);o2.stop(t+1.05);
+            },
+            // Bus horn
+            bus_horn() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sawtooth',[[0,220],[0.6,220]],[[0,0],[0.02,0.2],[0.5,0.2],[0.65,0]],t,0.7);
+                osc('sawtooth',[[0,277],[0.6,277]],[[0,0],[0.02,0.1],[0.5,0.1],[0.65,0]],t,0.7);
+            },
+            // Bicycle bell
+            bike_bell() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<2;i++){
+                    osc('sine',[[0,2200],[0.15,2000]],[[0,0.2],[0.02,0.18],[0.2,0]],t+i*0.22,0.25);
+                    osc('sine',[[0,4400],[0.15,4000]],[[0,0.05],[0.02,0.04],[0.15,0]],t+i*0.22,0.18);
+                }
+            },
+            // Airplane
+            airplane() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(1.2,400,1,0.12,t);
+                osc('sawtooth',[[0,100],[0.3,180],[0.8,250],[1.2,200]],
+                    [[0,0],[0.05,0.1],[0.3,0.12],[0.8,0.1],[1.2,0]],t,1.25);
+            },
+            // Train
+            train() {
+                ensureAudio(); const t=ctx.currentTime;
+                // Chu chu
+                for(let i=0;i<2;i++){
+                    const s=t+i*0.4;
+                    osc('sawtooth',[[0,300],[0.05,500],[0.15,400]],[[0,0],[0.02,0.2],[0.1,0.15],[0.2,0]],s,0.22);
+                    noise(0.15,2000,3,0.1,s);
+                }
+                // Wheels
+                for(let i=0;i<6;i++) osc('triangle',[[0,100],[0.03,80]],[[0,0.08],[0.02,0.05],[0.05,0]],t+i*0.15,0.06);
+            },
+            // Rocket launch
+            rocket() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(1.5,300,0.5,0.15,t);
+                osc('sawtooth',[[0,50],[0.5,100],[1,200],[1.5,400]],
+                    [[0,0],[0.1,0.12],[0.8,0.15],[1.5,0]],t,1.55);
+            },
+            // Motorcycle
+            moto() {
+                ensureAudio(); const t=ctx.currentTime;
+                const o=ctx.createOscillator(),g=ctx.createGain();
+                o.type='sawtooth';
+                o.frequency.setValueAtTime(60,t);o.frequency.linearRampToValueAtTime(120,t+0.2);
+                o.frequency.linearRampToValueAtTime(200,t+0.5);o.frequency.linearRampToValueAtTime(100,t+0.8);
+                g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.15,t+0.05);
+                g.gain.setValueAtTime(0.15,t+0.6);g.gain.linearRampToValueAtTime(0,t+0.85);
+                o.connect(g).connect(ctx.destination);o.start(t);o.stop(t+0.9);
+            },
+            // Boat horn
+            boat() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sawtooth',[[0,130],[0.8,125]],[[0,0],[0.05,0.2],[0.6,0.2],[0.85,0]],t,0.9);
+                osc('sine',[[0,260],[0.8,250]],[[0,0],[0.05,0.08],[0.6,0.08],[0.85,0]],t,0.9);
+            },
+            // Helicopter
+            helicopter() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<10;i++){
+                    osc('sawtooth',[[0,80],[0.04,60]],[[0,0.12],[0.02,0.08],[0.06,0]],t+i*0.08,0.07);
+                    noise(0.04,1000,3,0.06,t+i*0.08);
+                }
+            },
+            // Ball bounce
+            ball() {
+                ensureAudio(); const t=ctx.currentTime;
+                const bounces=[0,0.25,0.42,0.54];
+                bounces.forEach((b,i)=>{
+                    const f=300-i*40;
+                    osc('sine',[[0,f],[0.05,f*0.6]],[[0,0.25-i*0.05],[0.05,0.1],[0.1,0]],t+b,0.12);
+                    noise(0.04,1200,5,0.1-i*0.02,t+b);
+                });
+            },
+            // Paint splash
+            paint() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.4,1500,1.5,0.18,t);
+                osc('sine',[[0,300],[0.2,200]],[[0,0.05],[0.1,0.03],[0.3,0]],t,0.35);
+            },
+            // Balloon pop
+            balloon() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,1000],[0.005,200]],[[0,0.4],[0.005,0.2],[0.03,0]],t,0.04);
+                noise(0.1,3000,2,0.3,t);
+            },
+            // Dice rolling
+            dice() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<6;i++){
+                    noise(0.03,3000+i*500,8,0.12,t+i*0.06);
+                    osc('triangle',[[0,200+i*30],[0.02,150+i*20]],[[0,0.08],[0.02,0.04],[0.04,0]],t+i*0.06,0.05);
+                }
+            },
+            // Crayon scribble
+            crayon() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.5,3000,3,0.08,t);
+                for(let i=0;i<5;i++) osc('triangle',[[0,800+i*100],[0.06,600+i*80]],[[0,0.03],[0.04,0.02],[0.07,0]],t+i*0.08,0.08);
+            },
+            // Kite wind
+            kite() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.8,1000,1,0.1,t);
+                osc('sine',[[0,300],[0.4,500],[0.8,350]],[[0,0],[0.1,0.05],[0.5,0.04],[0.8,0]],t,0.85);
+            },
+            // Yoyo
+            yoyo() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,800],[0.15,400],[0.3,800]],[[0,0.12],[0.1,0.1],[0.25,0.08],[0.35,0]],t,0.38);
+            },
+            // Flower / twinkle
+            twinkle() {
+                ensureAudio(); const t=ctx.currentTime;
+                [1000,1200,1500,1800].forEach((f,i)=>{
+                    osc('sine',[[0,f],[0.1,f*1.1]],[[0,0],[0.02,0.12],[0.08,0.08],[0.15,0]],t+i*0.1,0.18);
+                });
+            },
+            // Wind in trees
+            wind() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(1,600,0.8,0.12,t);
+                noise(0.8,1200,1,0.06,t+0.1);
+            },
+            // Butterfly flutter
+            flutter() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<6;i++){
+                    osc('sine',[[0,2000+i*100],[0.03,1800+i*80]],[[0,0.04],[0.015,0.03],[0.04,0]],t+i*0.06,0.05);
+                }
+            },
+            // Munching/chomping food
+            chomp() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<3;i++){
+                    osc('square',[[0,300],[0.03,150]],[[0,0.2],[0.03,0.1],[0.06,0]],t+i*0.15,0.08);
+                    noise(0.04,2000,5,0.1,t+i*0.15);
+                }
+            },
+            // Pouring milk/drink
+            drink() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.6,2000,2,0.12,t);
+                for(let i=0;i<6;i++) osc('sine',[[0,500+i*30],[0.04,400+i*20]],[[0,0.02],[0.02,0.015],[0.05,0]],t+i*0.08,0.06);
+            },
+            // Rain drops
+            rain() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<8;i++){
+                    const d=Math.random()*0.05;
+                    osc('sine',[[0,2000+Math.random()*2000],[0.03,1000+Math.random()*1000]],
+                        [[0,0.06+Math.random()*0.04],[0.02,0.03],[0.05,0]],t+i*0.08+d,0.06);
+                }
+                noise(0.6,3000,2,0.06,t);
+            },
+            // Water drop
+            drop() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,1500],[0.05,800],[0.15,600]],[[0,0.2],[0.05,0.12],[0.2,0]],t,0.22);
+            },
+            // Caterpillar nibble
+            nibble() {
+                ensureAudio(); const t=ctx.currentTime;
+                for(let i=0;i<4;i++){
+                    osc('triangle',[[0,400],[0.02,300]],[[0,0.1],[0.02,0.06],[0.04,0]],t+i*0.1,0.05);
+                }
+            },
+            // Cake celebration
+            cake() {
+                ensureAudio(); const t=ctx.currentTime;
+                [523,659,784,1047].forEach((f,i)=>{
+                    osc('sine',[[0,f]],[[0,0],[0.02,0.15],[0.1,0.12],[0.2,0]],t+i*0.15,0.25);
+                });
+            },
+            // Ice cream slurp
+            slurp() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.3,1000,3,0.1,t);
+                osc('sine',[[0,500],[0.2,300]],[[0,0],[0.03,0.05],[0.15,0.03],[0.25,0]],t,0.28);
+            },
+            // Puzzle click
+            puzzle_click() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,1500],[0.02,1000]],[[0,0.2],[0.02,0.1],[0.05,0]],t,0.06);
+            },
+            // Teddy squeeze
+            teddy() {
+                ensureAudio(); const t=ctx.currentTime;
+                osc('sine',[[0,600],[0.1,800],[0.2,700]],[[0,0],[0.02,0.12],[0.1,0.1],[0.25,0]],t,0.28);
+            },
+            // Leaf rustle
+            leaf() {
+                ensureAudio(); const t=ctx.currentTime;
+                noise(0.3,3000,2,0.1,t);
+                noise(0.2,5000,3,0.05,t+0.05);
+            },
+            // Sun sparkle
+            sun() {
+                ensureAudio(); const t=ctx.currentTime;
+                [800,1000,1200,1500,1800].forEach((f,i)=>{
+                    osc('sine',[[0,f],[0.08,f*1.15]],[[0,0],[0.01,0.1],[0.06,0.06],[0.12,0]],t+i*0.08,0.15);
+                });
+            },
+            // Rainbow magic
+            rainbow() {
+                ensureAudio(); const t=ctx.currentTime;
+                [523,587,659,698,784,880,988].forEach((f,i)=>{
+                    osc('sine',[[0,f]],[[0,0],[0.02,0.08],[0.08,0.06],[0.15,0]],t+i*0.08,0.18);
+                });
+            },
         };
 
-        // Object categories
+        // Object categories with realistic sounds
         const objectPages = [
             {
                 title: '🏠 Casa',
                 items: [
                     { emoji:'🚪', name:'PORTA', sound:'knock', label:'Toc Toc!' },
-                    { emoji:'🪟', name:'JANELA', sound:'swoosh', label:'Abrir!' },
-                    { emoji:'💡', name:'LUZ', sound:'ding', label:'Click!' },
-                    { emoji:'🛏️', name:'CAMA', sound:'pop', label:'Zzz...' },
-                    { emoji:'🪑', name:'CADEIRA', sound:'knock', label:'Sentar!' },
-                    { emoji:'🚿', name:'CHUVEIRO', sound:'splash', label:'Splash!' },
-                    { emoji:'📺', name:'TV', sound:'beep', label:'Ligar!' },
-                    { emoji:'🔑', name:'CHAVE', sound:'ring', label:'Clink!' },
-                    { emoji:'🕐', name:'RELOGIO', sound:'click', label:'Tic Tac!' },
+                    { emoji:'🪟', name:'JANELA', sound:'window_open', label:'Shhh!' },
+                    { emoji:'💡', name:'LUZ', sound:'light_click', label:'Click!' },
+                    { emoji:'🛏️', name:'CAMA', sound:'snore', label:'Zzz...' },
+                    { emoji:'🪑', name:'CADEIRA', sound:'chair', label:'Creak!' },
+                    { emoji:'🚿', name:'CHUVEIRO', sound:'shower', label:'Shhhhh!' },
+                    { emoji:'📺', name:'TV', sound:'tv_on', label:'Ligar!' },
+                    { emoji:'🔑', name:'CHAVE', sound:'keys', label:'Clink!' },
+                    { emoji:'🕐', name:'RELOGIO', sound:'clock', label:'Tic Tac!' },
                 ]
             },
             {
                 title: '🍽️ Cozinha',
                 items: [
-                    { emoji:'🍽️', name:'PRATO', sound:'ding', label:'Ding!' },
-                    { emoji:'🥄', name:'COLHER', sound:'click', label:'Clink!' },
-                    { emoji:'🍳', name:'FRIGIDEIRA', sound:'splash', label:'Sizzz!' },
-                    { emoji:'🧊', name:'GELO', sound:'pop', label:'Crack!' },
-                    { emoji:'☕', name:'CHÁVENA', sound:'ding', label:'Sip!' },
-                    { emoji:'🫖', name:'BULE', sound:'splash', label:'Glug!' },
-                    { emoji:'🧂', name:'SAL', sound:'pop', label:'Shh!' },
-                    { emoji:'🍶', name:'GARRAFA', sound:'pop', label:'Pop!' },
-                    { emoji:'🧽', name:'ESPONJA', sound:'splash', label:'Splash!' },
+                    { emoji:'🍽️', name:'PRATO', sound:'plate', label:'Ding!' },
+                    { emoji:'🥄', name:'COLHER', sound:'spoon', label:'Clink!' },
+                    { emoji:'🍳', name:'FRIGIDEIRA', sound:'sizzle', label:'Chhhh!' },
+                    { emoji:'🧊', name:'GELO', sound:'ice', label:'Crack!' },
+                    { emoji:'☕', name:'CHÁVENA', sound:'sip', label:'Sip!' },
+                    { emoji:'🫖', name:'BULE', sound:'pour', label:'Glug!' },
+                    { emoji:'🧂', name:'SAL', sound:'snap', label:'Shh!' },
+                    { emoji:'🍶', name:'GARRAFA', sound:'bottle_pop', label:'Pop!' },
+                    { emoji:'🧽', name:'ESPONJA', sound:'sponge', label:'Squish!' },
                 ]
             },
             {
                 title: '👕 Roupa',
                 items: [
-                    { emoji:'👕', name:'CAMISOLA', sound:'swoosh', label:'Vestir!' },
-                    { emoji:'👖', name:'CALÇAS', sound:'swoosh', label:'Zip!' },
-                    { emoji:'👟', name:'SAPATOS', sound:'knock', label:'Tap Tap!' },
-                    { emoji:'🧦', name:'MEIAS', sound:'pop', label:'Puxar!' },
-                    { emoji:'🎒', name:'MOCHILA', sound:'swoosh', label:'Zip!' },
-                    { emoji:'👒', name:'CHAPÉU', sound:'pop', label:'Plop!' },
-                    { emoji:'🧤', name:'LUVAS', sound:'swoosh', label:'Snap!' },
-                    { emoji:'🧣', name:'CACHECOL', sound:'swoosh', label:'Wrap!' },
-                    { emoji:'👓', name:'ÓCULOS', sound:'click', label:'Click!' },
+                    { emoji:'👕', name:'CAMISOLA', sound:'zipper', label:'Vestir!' },
+                    { emoji:'👖', name:'CALÇAS', sound:'zipper', label:'Zip!' },
+                    { emoji:'👟', name:'SAPATOS', sound:'shoes', label:'Tap Tap!' },
+                    { emoji:'🧦', name:'MEIAS', sound:'snap', label:'Puxar!' },
+                    { emoji:'🎒', name:'MOCHILA', sound:'zipper', label:'Zip!' },
+                    { emoji:'👒', name:'CHAPÉU', sound:'plop', label:'Plop!' },
+                    { emoji:'🧤', name:'LUVAS', sound:'snap', label:'Snap!' },
+                    { emoji:'🧣', name:'CACHECOL', sound:'wind', label:'Wrap!' },
+                    { emoji:'👓', name:'ÓCULOS', sound:'light_click', label:'Click!' },
                 ]
             },
             {
                 title: '🚗 Transportes',
                 items: [
-                    { emoji:'🚗', name:'CARRO', sound:'vroom', label:'Vrum!' },
-                    { emoji:'🚌', name:'AUTOCARRO', sound:'vroom', label:'Biii!' },
-                    { emoji:'🚲', name:'BICICLETA', sound:'ring', label:'Trim!' },
-                    { emoji:'✈️', name:'AVIÃO', sound:'swoosh', label:'Vuuush!' },
-                    { emoji:'🚂', name:'COMBOIO', sound:'vroom', label:'Chu Chu!' },
-                    { emoji:'🚀', name:'FOGUETÃO', sound:'vroom', label:'Blast!' },
-                    { emoji:'🛵', name:'MOTA', sound:'vroom', label:'Brrr!' },
-                    { emoji:'⛵', name:'BARCO', sound:'splash', label:'Splash!' },
-                    { emoji:'🚁', name:'HELICÓPTERO', sound:'swoosh', label:'Chop!' },
+                    { emoji:'🚗', name:'CARRO', sound:'car', label:'Vrum Vrum!' },
+                    { emoji:'🚌', name:'AUTOCARRO', sound:'bus_horn', label:'Biii!' },
+                    { emoji:'🚲', name:'BICICLETA', sound:'bike_bell', label:'Trim Trim!' },
+                    { emoji:'✈️', name:'AVIÃO', sound:'airplane', label:'Vuuush!' },
+                    { emoji:'🚂', name:'COMBOIO', sound:'train', label:'Chu Chu!' },
+                    { emoji:'🚀', name:'FOGUETÃO', sound:'rocket', label:'Blast!' },
+                    { emoji:'🛵', name:'MOTA', sound:'moto', label:'Brrr!' },
+                    { emoji:'⛵', name:'BARCO', sound:'boat', label:'Buuuu!' },
+                    { emoji:'🚁', name:'HELICÓPTERO', sound:'helicopter', label:'Chop Chop!' },
                 ]
             },
             {
                 title: '🎮 Brinquedos',
                 items: [
-                    { emoji:'🧸', name:'PELUCHE', sound:'pop', label:'Fofinho!' },
-                    { emoji:'⚽', name:'BOLA', sound:'bounce', label:'Boing!' },
-                    { emoji:'🎨', name:'TINTAS', sound:'splash', label:'Splash!' },
-                    { emoji:'🪁', name:'PAPAGAIO', sound:'swoosh', label:'Vuush!' },
-                    { emoji:'🎲', name:'DADOS', sound:'knock', label:'Roll!' },
-                    { emoji:'🧩', name:'PUZZLE', sound:'click', label:'Click!' },
-                    { emoji:'🪀', name:'IOIO', sound:'swoosh', label:'Zzip!' },
-                    { emoji:'🎈', name:'BALÃO', sound:'pop', label:'Pop!' },
-                    { emoji:'🖍️', name:'LÁPIS', sound:'click', label:'Riiis!' },
+                    { emoji:'🧸', name:'PELUCHE', sound:'teddy', label:'Fofinho!' },
+                    { emoji:'⚽', name:'BOLA', sound:'ball', label:'Boing!' },
+                    { emoji:'🎨', name:'TINTAS', sound:'paint', label:'Splash!' },
+                    { emoji:'🪁', name:'PAPAGAIO', sound:'kite', label:'Vuush!' },
+                    { emoji:'🎲', name:'DADOS', sound:'dice', label:'Roll!' },
+                    { emoji:'🧩', name:'PUZZLE', sound:'puzzle_click', label:'Click!' },
+                    { emoji:'🪀', name:'IOIO', sound:'yoyo', label:'Zzip!' },
+                    { emoji:'🎈', name:'BALÃO', sound:'balloon', label:'Pop!' },
+                    { emoji:'🖍️', name:'LÁPIS', sound:'crayon', label:'Riiis!' },
                 ]
             },
             {
                 title: '🌳 Jardim',
                 items: [
                     { emoji:'🌸', name:'FLOR', sound:'twinkle', label:'Linda!' },
-                    { emoji:'🌳', name:'ÁRVORE', sound:'swoosh', label:'Shhhh!' },
-                    { emoji:'🦋', name:'BORBOLETA', sound:'twinkle', label:'Flutter!' },
-                    { emoji:'🐛', name:'LAGARTA', sound:'chomp', label:'Nhom!' },
-                    { emoji:'🍂', name:'FOLHA', sound:'swoosh', label:'Shh!' },
-                    { emoji:'🌧️', name:'CHUVA', sound:'splash', label:'Plic Ploc!' },
-                    { emoji:'☀️', name:'SOL', sound:'twinkle', label:'Brilha!' },
-                    { emoji:'🌈', name:'ARCO-ÍRIS', sound:'twinkle', label:'Uau!' },
-                    { emoji:'💧', name:'GOTA', sound:'splash', label:'Plop!' },
+                    { emoji:'🌳', name:'ÁRVORE', sound:'wind', label:'Shhhh!' },
+                    { emoji:'🦋', name:'BORBOLETA', sound:'flutter', label:'Flutter!' },
+                    { emoji:'🐛', name:'LAGARTA', sound:'nibble', label:'Nhom!' },
+                    { emoji:'🍂', name:'FOLHA', sound:'leaf', label:'Shh!' },
+                    { emoji:'🌧️', name:'CHUVA', sound:'rain', label:'Plic Ploc!' },
+                    { emoji:'☀️', name:'SOL', sound:'sun', label:'Brilha!' },
+                    { emoji:'🌈', name:'ARCO-ÍRIS', sound:'rainbow', label:'Uau!' },
+                    { emoji:'💧', name:'GOTA', sound:'drop', label:'Plop!' },
                 ]
             },
             {
@@ -197,13 +563,13 @@
                 items: [
                     { emoji:'🍎', name:'MAÇÃ', sound:'chomp', label:'Crunch!' },
                     { emoji:'🍌', name:'BANANA', sound:'chomp', label:'Nhom!' },
-                    { emoji:'🥛', name:'LEITE', sound:'splash', label:'Glug!' },
+                    { emoji:'🥛', name:'LEITE', sound:'drink', label:'Glug!' },
                     { emoji:'🍞', name:'PÃO', sound:'chomp', label:'Crunch!' },
                     { emoji:'🧀', name:'QUEIJO', sound:'chomp', label:'Nhom!' },
                     { emoji:'🍪', name:'BOLACHA', sound:'chomp', label:'Crok!' },
                     { emoji:'🍕', name:'PIZZA', sound:'chomp', label:'Yum!' },
-                    { emoji:'🎂', name:'BOLO', sound:'twinkle', label:'Parabéns!' },
-                    { emoji:'🍦', name:'GELADO', sound:'pop', label:'Slurp!' },
+                    { emoji:'🎂', name:'BOLO', sound:'cake', label:'Parabéns!' },
+                    { emoji:'🍦', name:'GELADO', sound:'slurp', label:'Slurp!' },
                 ]
             },
         ];
