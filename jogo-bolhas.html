@@ -328,25 +328,30 @@
         document.addEventListener('dblclick', e => e.preventDefault());
 
         // iOS audio unlock
-        document.getElementById('iosUnlock').addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            ensureAudio();
-            const b = audioCtx.createBuffer(1, 1, 22050);
-            const s = audioCtx.createBufferSource();
-            s.buffer = b;
-            s.connect(audioCtx.destination);
-            s.start(0);
-            this.remove();
-        }, { once: true });
-        document.getElementById('iosUnlock').addEventListener('click', function(e) {
-            ensureAudio();
-            const b = audioCtx.createBuffer(1, 1, 22050);
-            const s = audioCtx.createBufferSource();
-            s.buffer = b;
-            s.connect(audioCtx.destination);
-            s.start(0);
-            this.remove();
-        }, { once: true });
+        (function() {
+            var unlock = document.getElementById('iosUnlock');
+            function doUnlock() {
+                var AC = window.AudioContext || window.webkitAudioContext;
+                if (!audioCtx) audioCtx = new AC();
+                audioCtx.resume().then(function() {
+                    var o = audioCtx.createOscillator();
+                    var g = audioCtx.createGain();
+                    g.gain.value = 0.001;
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.start(0);
+                    o.stop(audioCtx.currentTime + 0.1);
+                });
+                unlock.style.display = 'none';
+                document.removeEventListener('touchstart', doUnlock, true);
+                document.removeEventListener('touchend', doUnlock, true);
+                document.removeEventListener('click', doUnlock, true);
+            }
+            unlock.addEventListener('touchend', doUnlock);
+            unlock.addEventListener('click', doUnlock);
+            document.addEventListener('touchstart', doUnlock, true);
+            document.addEventListener('touchend', doUnlock, true);
+        })();
     </script>
 </body>
 </html>
