@@ -181,44 +181,50 @@
             pointer-events: none;
             overflow: hidden;
         }
-        .worm-hole {
+        /* Each hole is a container that clips the worm */
+        .worm-spot {
             position: absolute;
-            bottom: 10px;
+            bottom: 8px;
+            width: 50px;
+            height: 70px;
+            overflow: hidden;
+        }
+        .worm-hole-shadow {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
             width: 0px;
             height: 0px;
-            background: radial-gradient(ellipse, #3a6b30 0%, #2d5a25 60%, transparent 70%);
+            background: radial-gradient(ellipse, #3a6b30 0%, #2d5a25 50%, transparent 72%);
             border-radius: 50%;
-            z-index: 8;
-            transition: width 0.4s ease, height 0.4s ease, margin-left 0s;
-            opacity: 0;
+            transition: width 0.35s ease, height 0.35s ease;
+            z-index: 2;
         }
-        .worm-hole.open {
-            width: 44px;
-            height: 20px;
-            opacity: 1;
-        }
-        .worm {
-            position: absolute;
-            bottom: 18px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 7;
-            transition: left 0.5s ease;
+        .worm-spot.active .worm-hole-shadow {
+            width: 46px;
+            height: 18px;
         }
         .worm-body {
-            width: 28px;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) translateY(70px);
             display: flex;
             flex-direction: column;
             align-items: center;
+            z-index: 1;
+        }
+        .worm-spot.active .worm-body {
+            animation: worm-peek 3s ease-in-out forwards;
         }
         .worm-head {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             background: #e84393;
             border-radius: 50%;
             position: relative;
-            z-index: 2;
+            flex-shrink: 0;
         }
         .worm-head::before, .worm-head::after {
             content: '';
@@ -227,46 +233,42 @@
             height: 8px;
             background: white;
             border-radius: 50%;
-            top: 6px;
+            top: 5px;
         }
-        .worm-head::before { left: 4px; }
-        .worm-head::after { right: 4px; }
+        .worm-head::before { left: 3px; }
+        .worm-head::after { right: 3px; }
         .worm-eye-l, .worm-eye-r {
             position: absolute;
             width: 4px;
             height: 4px;
             background: #2d3436;
             border-radius: 50%;
-            top: 8px;
+            top: 7px;
             z-index: 3;
         }
-        .worm-eye-l { left: 6px; }
-        .worm-eye-r { right: 6px; }
+        .worm-eye-l { left: 5px; }
+        .worm-eye-r { right: 5px; }
         .worm-segment {
-            width: 24px;
-            height: 14px;
+            width: 22px;
+            height: 13px;
             border-radius: 50%;
             margin-top: -4px;
+            flex-shrink: 0;
         }
-        .worm-segment:nth-child(2) { background: #fd79a8; }
-        .worm-segment:nth-child(3) { background: #e84393; }
-        .worm-segment:nth-child(4) { background: #fd79a8; }
-        .worm-segment:nth-child(5) { background: #e84393; }
-
-        .worm-body {
-            animation: worm-peek 3s ease-in-out;
-        }
+        .worm-seg-1 { background: #fd79a8; }
+        .worm-seg-2 { background: #e84393; }
 
         @keyframes worm-peek {
-            0%   { transform: translateY(60px); }
-            15%  { transform: translateY(10px); }
-            25%  { transform: translateY(10px) rotate(-8deg); }
-            35%  { transform: translateY(10px) rotate(8deg); }
-            45%  { transform: translateY(10px) rotate(-5deg); }
-            55%  { transform: translateY(10px); }
-            70%  { transform: translateY(10px) rotate(0deg); }
-            85%  { transform: translateY(60px); }
-            100% { transform: translateY(60px); }
+            0%   { transform: translateX(-50%) translateY(70px); }
+            12%  { transform: translateX(-50%) translateY(8px); }
+            20%  { transform: translateX(-50%) translateY(8px) rotate(-10deg); }
+            30%  { transform: translateX(-50%) translateY(8px) rotate(10deg); }
+            40%  { transform: translateX(-50%) translateY(8px) rotate(-6deg); }
+            50%  { transform: translateX(-50%) translateY(5px); }
+            60%  { transform: translateX(-50%) translateY(5px) rotate(5deg); }
+            70%  { transform: translateX(-50%) translateY(8px) rotate(0deg); }
+            82%  { transform: translateX(-50%) translateY(70px); }
+            100% { transform: translateX(-50%) translateY(70px); }
         }
 
         footer {
@@ -349,74 +351,81 @@
     <div class="grass"></div>
     <div class="grass-dark"></div>
 
-    <!-- Minhoca -->
+    <!-- Minhoca - cada spot tem o seu buraco + minhoca escondida -->
     <div class="worm-zone" id="wormZone">
-        <div class="worm-hole" id="hole1" style="left:15%;"></div>
-        <div class="worm-hole" id="hole2" style="left:40%;"></div>
-        <div class="worm-hole" id="hole3" style="left:65%;"></div>
-        <div class="worm-hole" id="hole4" style="left:85%;"></div>
-
-        <div class="worm" id="worm">
-            <div class="worm-body" id="wormBody">
-                <div class="worm-head">
-                    <div class="worm-eye-l"></div>
-                    <div class="worm-eye-r"></div>
-                </div>
-                <div class="worm-segment"></div>
-                <div class="worm-segment"></div>
-                <div class="worm-segment"></div>
-                <div class="worm-segment"></div>
+        <div class="worm-spot" id="spot0" style="left:10%;">
+            <div class="worm-hole-shadow"></div>
+            <div class="worm-body">
+                <div class="worm-head"><div class="worm-eye-l"></div><div class="worm-eye-r"></div></div>
+                <div class="worm-segment worm-seg-1"></div>
+                <div class="worm-segment worm-seg-2"></div>
+                <div class="worm-segment worm-seg-1"></div>
+            </div>
+        </div>
+        <div class="worm-spot" id="spot1" style="left:30%;">
+            <div class="worm-hole-shadow"></div>
+            <div class="worm-body">
+                <div class="worm-head"><div class="worm-eye-l"></div><div class="worm-eye-r"></div></div>
+                <div class="worm-segment worm-seg-1"></div>
+                <div class="worm-segment worm-seg-2"></div>
+                <div class="worm-segment worm-seg-1"></div>
+            </div>
+        </div>
+        <div class="worm-spot" id="spot2" style="left:52%;">
+            <div class="worm-hole-shadow"></div>
+            <div class="worm-body">
+                <div class="worm-head"><div class="worm-eye-l"></div><div class="worm-eye-r"></div></div>
+                <div class="worm-segment worm-seg-1"></div>
+                <div class="worm-segment worm-seg-2"></div>
+                <div class="worm-segment worm-seg-1"></div>
+            </div>
+        </div>
+        <div class="worm-spot" id="spot3" style="left:72%;">
+            <div class="worm-hole-shadow"></div>
+            <div class="worm-body">
+                <div class="worm-head"><div class="worm-eye-l"></div><div class="worm-eye-r"></div></div>
+                <div class="worm-segment worm-seg-1"></div>
+                <div class="worm-segment worm-seg-2"></div>
+                <div class="worm-segment worm-seg-1"></div>
+            </div>
+        </div>
+        <div class="worm-spot" id="spot4" style="left:88%;">
+            <div class="worm-hole-shadow"></div>
+            <div class="worm-body">
+                <div class="worm-head"><div class="worm-eye-l"></div><div class="worm-eye-r"></div></div>
+                <div class="worm-segment worm-seg-1"></div>
+                <div class="worm-segment worm-seg-2"></div>
+                <div class="worm-segment worm-seg-1"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Worm animation
-        const holes = [
-            document.getElementById('hole1'),
-            document.getElementById('hole2'),
-            document.getElementById('hole3'),
-            document.getElementById('hole4'),
-        ];
-        const worm = document.getElementById('worm');
-        const wormBody = document.getElementById('wormBody');
-        let currentHole = 0;
-        let lastHole = -1;
+        // Worm animation - each spot has its own worm hidden by overflow
+        const spots = document.querySelectorAll('.worm-spot');
+        let lastSpot = -1;
 
         function peekWorm() {
-            // Pick a different hole
+            // Pick a different spot
             let next;
-            do { next = Math.floor(Math.random() * holes.length); }
-            while (next === lastHole);
-            lastHole = next;
+            do { next = Math.floor(Math.random() * spots.length); }
+            while (next === lastSpot);
+            lastSpot = next;
 
-            const hole = holes[next];
+            const spot = spots[next];
 
-            // 1. Open hole first
-            hole.classList.add('open');
+            // Activate: hole opens + worm peeks
+            spot.classList.add('active');
 
-            // 2. After hole opens, show worm
+            // Remove after animation ends (hole closes + worm hidden)
             setTimeout(() => {
-                const holeLeft = hole.offsetLeft + 22 - 14;
-                worm.style.left = holeLeft + 'px';
-
-                // Restart worm animation
-                wormBody.style.animation = 'none';
-                void wormBody.offsetWidth;
-                wormBody.style.animation = 'worm-peek 3s ease-in-out';
-
-                // 3. Close hole after worm goes back down
-                setTimeout(() => {
-                    hole.classList.remove('open');
-                }, 2800);
-
-            }, 450);
+                spot.classList.remove('active');
+            }, 3100);
 
             // Next peek
-            setTimeout(peekWorm, 4000 + Math.random() * 3000);
+            setTimeout(peekWorm, 3800 + Math.random() * 2500);
         }
 
-        // Start after a short delay
         setTimeout(peekWorm, 1500);
     </script>
 </body>
