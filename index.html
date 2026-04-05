@@ -144,10 +144,8 @@
         .game-card:nth-child(11) { background: linear-gradient(145deg, #ff6b6b, #ee5a24); box-shadow: 0 6px 20px rgba(238,90,36,0.35); }
         .game-card:nth-child(12) { background: linear-gradient(145deg, #55efc4, #1abc9c); box-shadow: 0 6px 20px rgba(26,188,156,0.35); }
 
-        .game-card .card-emoji {
-            font-size: clamp(40px, 11vw, 60px);
-            line-height: 1;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        .game-card .card-icon {
+            pointer-events: none;
         }
 
         .game-card .card-title {
@@ -323,79 +321,254 @@
         <p class="subtitle">Jogos divertidos para os mais pequeninos!</p>
     </header>
 
-    <div class="games-grid">
-        <a href="jogo-animais.html" class="game-card">
-            <span class="card-emoji">🐶🐱🐮</span>
-            <span class="card-title">Toca nos Animais</span>
-            <span class="card-age">1-3 anos</span>
-        </a>
+    <div class="games-grid" id="gamesGrid"></div>
 
-        <a href="jogo-cores.html" class="game-card">
-            <span class="card-emoji">🔴🟡🔵</span>
-            <span class="card-title">Cores e Formas</span>
-            <span class="card-age">1-3 anos</span>
-        </a>
+    <script>
+    // Game card data
+    const games = [
+        { href:'jogo-animais.html', title:'Toca nos Animais', age:'1-3 anos', draw: drawAnimals },
+        { href:'jogo-cores.html', title:'Cores e Formas', age:'1-3 anos', draw: drawCores },
+        { href:'jogo-bolhas.html', title:'Bolhas de Sabao', age:'1-2 anos', draw: drawBolhas },
+        { href:'jogo-piano.html', title:'Piano de Cores', age:'1-3 anos', draw: drawPiano },
+        { href:'jogo-cobra.html', title:'Cobrinha', age:'3+ anos', draw: drawCobra },
+        { href:'jogo-puzzle.html', title:'Puzzle Simples', age:'2-4 anos', draw: drawPuzzle },
+        { href:'jogo-numeros.html', title:'Primeiros Numeros', age:'2-4 anos', draw: drawNumeros },
+        { href:'jogo-ingles.html', title:'Aprende Ingles', age:'3+ anos', draw: drawIngles },
+        { href:'jogo-oceano.html', title:'Limpa o Oceano', age:'2+ anos', draw: drawOceano },
+        { href:'jogo-objetos.html', title:'Objetos do Dia', age:'1-3 anos', draw: drawObjetos },
+        { href:'jogo-pintar.html', title:'Pintar', age:'1+ anos', draw: drawPintar },
+        { href:'jogo-colorir.html', title:'Colorir', age:'2+ anos', draw: drawColorir },
+    ];
 
-        <a href="jogo-bolhas.html" class="game-card">
-            <span class="card-emoji">🫧🫧🫧</span>
-            <span class="card-title">Bolhas de Sabao</span>
-            <span class="card-age">1-2 anos</span>
-        </a>
+    // ===== CARD ILLUSTRATIONS =====
+    function drawAnimals(c,w,h){
+        // Cute cat face
+        c.fillStyle='#ff9f43';
+        c.beginPath();c.arc(w*0.5,h*0.42,w*0.3,0,Math.PI*2);c.fill();
+        // Ears
+        c.beginPath();c.moveTo(w*0.25,h*0.22);c.lineTo(w*0.18,h*0.02);c.lineTo(w*0.38,h*0.18);c.fill();
+        c.beginPath();c.moveTo(w*0.75,h*0.22);c.lineTo(w*0.82,h*0.02);c.lineTo(w*0.62,h*0.18);c.fill();
+        // Inner ears
+        c.fillStyle='#ffcccc';
+        c.beginPath();c.moveTo(w*0.27,h*0.22);c.lineTo(w*0.22,h*0.08);c.lineTo(w*0.36,h*0.2);c.fill();
+        c.beginPath();c.moveTo(w*0.73,h*0.22);c.lineTo(w*0.78,h*0.08);c.lineTo(w*0.64,h*0.2);c.fill();
+        // Eyes
+        c.fillStyle='#2d3436';
+        c.beginPath();c.ellipse(w*0.38,h*0.38,w*0.05,w*0.07,0,0,Math.PI*2);c.fill();
+        c.beginPath();c.ellipse(w*0.62,h*0.38,w*0.05,w*0.07,0,0,Math.PI*2);c.fill();
+        c.fillStyle='white';
+        c.beginPath();c.arc(w*0.4,h*0.36,w*0.02,0,Math.PI*2);c.fill();
+        c.beginPath();c.arc(w*0.64,h*0.36,w*0.02,0,Math.PI*2);c.fill();
+        // Nose
+        c.fillStyle='#ff6b6b';
+        c.beginPath();c.moveTo(w*0.5,h*0.47);c.lineTo(w*0.47,h*0.44);c.lineTo(w*0.53,h*0.44);c.fill();
+        // Mouth
+        c.strokeStyle='#e17055';c.lineWidth=2;
+        c.beginPath();c.moveTo(w*0.5,h*0.47);c.quadraticCurveTo(w*0.44,h*0.53,w*0.4,h*0.51);c.stroke();
+        c.beginPath();c.moveTo(w*0.5,h*0.47);c.quadraticCurveTo(w*0.56,h*0.53,w*0.6,h*0.51);c.stroke();
+        // Whiskers
+        c.strokeStyle='rgba(0,0,0,0.3)';c.lineWidth=1.5;
+        c.beginPath();c.moveTo(w*0.2,h*0.44);c.lineTo(w*0.38,h*0.46);c.stroke();
+        c.beginPath();c.moveTo(w*0.18,h*0.5);c.lineTo(w*0.37,h*0.49);c.stroke();
+        c.beginPath();c.moveTo(w*0.8,h*0.44);c.lineTo(w*0.62,h*0.46);c.stroke();
+        c.beginPath();c.moveTo(w*0.82,h*0.5);c.lineTo(w*0.63,h*0.49);c.stroke();
+    }
+    function drawCores(c,w,h){
+        const shapes=[
+            {x:0.3,y:0.25,r:0.15,col:'#ff6b6b'},
+            {x:0.65,y:0.2,r:0.12,col:'#ffd93d'},
+            {x:0.5,y:0.45,r:0.14,col:'#74b9ff'},
+        ];
+        shapes.forEach(s=>{c.fillStyle=s.col;c.beginPath();c.arc(w*s.x,h*s.y,w*s.r,0,Math.PI*2);c.fill();});
+        // Triangle
+        c.fillStyle='#55efc4';
+        c.beginPath();c.moveTo(w*0.25,h*0.65);c.lineTo(w*0.45,h*0.65);c.lineTo(w*0.35,h*0.45);c.closePath();c.fill();
+        // Square
+        c.fillStyle='#a29bfe';
+        c.fillRect(w*0.55,h*0.5,w*0.2,w*0.2);
+    }
+    function drawBolhas(c,w,h){
+        const bubbles=[[0.3,0.2,0.14],[0.6,0.35,0.18],[0.35,0.55,0.11],[0.7,0.15,0.09],[0.5,0.1,0.07],[0.2,0.42,0.08]];
+        const cols=['rgba(255,107,107,0.35)','rgba(116,185,255,0.4)','rgba(162,155,254,0.35)','rgba(253,121,168,0.35)','rgba(85,239,196,0.35)','rgba(255,234,167,0.4)'];
+        bubbles.forEach(([bx,by,br],i)=>{
+            c.beginPath();c.arc(w*bx,h*by,w*br,0,Math.PI*2);
+            c.fillStyle=cols[i%cols.length];c.fill();
+            c.strokeStyle=cols[i%cols.length].replace('0.35','0.6').replace('0.4','0.7');c.lineWidth=2;c.stroke();
+            // Highlight
+            c.beginPath();c.ellipse(w*bx-w*br*0.25,h*by-w*br*0.3,w*br*0.3,w*br*0.15,-0.5,0,Math.PI*2);
+            c.fillStyle='rgba(255,255,255,0.5)';c.fill();
+        });
+    }
+    function drawPiano(c,w,h){
+        const keys=['#ff6b6b','#ffa502','#ffd93d','#55efc4','#74b9ff','#a29bfe','#fd79a8'];
+        const kw=w*0.11;
+        keys.forEach((col,i)=>{
+            const x=w*0.08+i*(kw+w*0.02);
+            c.fillStyle=col;
+            c.beginPath();
+            c.roundRect(x,h*0.1,kw,h*0.55,0,0,w*0.02,w*0.02);
+            c.fill();
+            // Shadow
+            c.fillStyle='rgba(0,0,0,0.1)';
+            c.fillRect(x,h*0.5,kw,h*0.15);
+        });
+        // Music notes
+        c.fillStyle='rgba(0,0,0,0.2)';
+        c.font=(w*0.12)+'px serif';
+        c.fillText('\u266A',w*0.2,h*0.85);
+        c.fillText('\u266B',w*0.55,h*0.8);
+    }
+    function drawCobra(c,w,h){
+        // Snake body
+        c.strokeStyle='#55efc4';c.lineWidth=w*0.08;c.lineCap='round';
+        c.beginPath();c.moveTo(w*0.15,h*0.55);c.bezierCurveTo(w*0.3,h*0.2,w*0.5,h*0.7,w*0.7,h*0.3);c.stroke();
+        // Head
+        c.fillStyle='#00b894';
+        c.beginPath();c.arc(w*0.7,h*0.28,w*0.1,0,Math.PI*2);c.fill();
+        // Eye
+        c.fillStyle='white';c.beginPath();c.arc(w*0.73,h*0.25,w*0.04,0,Math.PI*2);c.fill();
+        c.fillStyle='#2d3436';c.beginPath();c.arc(w*0.74,h*0.25,w*0.02,0,Math.PI*2);c.fill();
+        // Tongue
+        c.strokeStyle='#ff6b6b';c.lineWidth=2;
+        c.beginPath();c.moveTo(w*0.78,h*0.28);c.lineTo(w*0.85,h*0.25);c.stroke();
+        c.beginPath();c.moveTo(w*0.78,h*0.28);c.lineTo(w*0.85,h*0.31);c.stroke();
+        // Apple
+        c.fillStyle='#ff6b6b';c.beginPath();c.arc(w*0.3,h*0.6,w*0.08,0,Math.PI*2);c.fill();
+        c.fillStyle='#27ae60';c.fillRect(w*0.29,h*0.5,w*0.02,h*0.04);
+    }
+    function drawPuzzle(c,w,h){
+        const cols=['#ff6b6b','#ffd93d','#74b9ff','#55efc4'];
+        const gap=3;
+        cols.forEach((col,i)=>{
+            const x=(i%2)*(w*0.42+gap)+w*0.08;
+            const y=Math.floor(i/2)*(h*0.35+gap)+h*0.08;
+            c.fillStyle=col;
+            c.beginPath();c.roundRect(x,y,w*0.4,h*0.32,[w*0.04]);c.fill();
+        });
+        // Puzzle lines
+        c.strokeStyle='rgba(255,255,255,0.6)';c.lineWidth=3;c.setLineDash([]);
+        c.beginPath();c.moveTo(w*0.5,h*0.08);c.lineTo(w*0.5,h*0.75);c.stroke();
+        c.beginPath();c.moveTo(w*0.08,h*0.42);c.lineTo(w*0.92,h*0.42);c.stroke();
+    }
+    function drawNumeros(c,w,h){
+        c.font='bold '+(w*0.3)+'px sans-serif';c.textAlign='center';c.textBaseline='middle';
+        c.fillStyle='#ff6b6b';c.fillText('1',w*0.25,h*0.3);
+        c.fillStyle='#ffd93d';c.fillText('2',w*0.6,h*0.25);
+        c.fillStyle='#74b9ff';c.fillText('3',w*0.4,h*0.55);
+        // Small dots
+        c.fillStyle='#55efc4';
+        c.beginPath();c.arc(w*0.75,h*0.55,w*0.04,0,Math.PI*2);c.fill();
+        c.beginPath();c.arc(w*0.8,h*0.45,w*0.04,0,Math.PI*2);c.fill();
+        c.beginPath();c.arc(w*0.85,h*0.55,w*0.04,0,Math.PI*2);c.fill();
+    }
+    function drawIngles(c,w,h){
+        c.font='bold '+(w*0.18)+'px sans-serif';c.textAlign='center';c.textBaseline='middle';
+        // ABC blocks
+        const letters=[{l:'A',x:0.22,y:0.25,col:'#ff6b6b'},{l:'B',x:0.5,y:0.3,col:'#ffd93d'},{l:'C',x:0.78,y:0.25,col:'#74b9ff'}];
+        letters.forEach(({l,x,y,col})=>{
+            c.fillStyle=col;c.beginPath();c.roundRect(w*x-w*0.12,h*y-w*0.12,w*0.24,w*0.24,[w*0.04]);c.fill();
+            c.fillStyle='white';c.fillText(l,w*x,h*y+w*0.01);
+        });
+        // Small flag
+        c.fillStyle='#e74c3c';c.fillRect(w*0.35,h*0.6,w*0.3,h*0.04);
+        c.fillStyle='white';c.fillRect(w*0.35,h*0.64,w*0.3,h*0.04);
+        c.fillStyle='#2980b9';c.fillRect(w*0.35,h*0.68,w*0.3,h*0.04);
+    }
+    function drawOceano(c,w,h){
+        // Water
+        c.fillStyle='rgba(9,132,227,0.15)';c.fillRect(0,0,w,h);
+        // Fish
+        c.fillStyle='#ff6b6b';
+        c.beginPath();c.ellipse(w*0.55,h*0.3,w*0.15,w*0.08,0,0,Math.PI*2);c.fill();
+        // Tail
+        c.beginPath();c.moveTo(w*0.4,h*0.3);c.lineTo(w*0.3,h*0.2);c.lineTo(w*0.3,h*0.4);c.closePath();c.fill();
+        // Eye
+        c.fillStyle='white';c.beginPath();c.arc(w*0.62,h*0.27,w*0.03,0,Math.PI*2);c.fill();
+        c.fillStyle='#2d3436';c.beginPath();c.arc(w*0.63,h*0.27,w*0.015,0,Math.PI*2);c.fill();
+        // Seaweed
+        c.strokeStyle='#00b894';c.lineWidth=3;c.lineCap='round';
+        c.beginPath();c.moveTo(w*0.15,h*0.7);c.quadraticCurveTo(w*0.2,h*0.5,w*0.13,h*0.35);c.stroke();
+        c.beginPath();c.moveTo(w*0.8,h*0.7);c.quadraticCurveTo(w*0.75,h*0.55,w*0.82,h*0.4);c.stroke();
+        // Bubbles
+        c.strokeStyle='rgba(255,255,255,0.4)';c.lineWidth=1.5;
+        [0.4,0.6,0.35].forEach((bx,i)=>{c.beginPath();c.arc(w*bx,h*(0.45+i*0.08),w*0.02,0,Math.PI*2);c.stroke();});
+        // Trash
+        c.fillStyle='rgba(255,100,100,0.5)';
+        c.fillRect(w*0.6,h*0.55,w*0.12,w*0.08);
+    }
+    function drawObjetos(c,w,h){
+        // Simple house
+        c.fillStyle='#ff7675';c.fillRect(w*0.15,h*0.3,w*0.35,h*0.35);
+        c.fillStyle='#d63031';c.beginPath();c.moveTo(w*0.1,h*0.33);c.lineTo(w*0.32,h*0.1);c.lineTo(w*0.55,h*0.33);c.closePath();c.fill();
+        c.fillStyle='#74b9ff';c.fillRect(w*0.22,h*0.38,w*0.08,h*0.08);
+        c.fillStyle='#6c5ce7';c.fillRect(w*0.35,h*0.42,w*0.08,h*0.23);
+        // Car
+        c.fillStyle='#0984e3';
+        c.beginPath();c.roundRect(w*0.55,h*0.4,w*0.35,h*0.15,[w*0.03]);c.fill();
+        c.fillStyle='#74b9ff';
+        c.beginPath();c.roundRect(w*0.62,h*0.3,w*0.2,h*0.12,[w*0.03,w*0.03,0,0]);c.fill();
+        c.fillStyle='#2d3436';
+        c.beginPath();c.arc(w*0.65,h*0.58,w*0.04,0,Math.PI*2);c.fill();
+        c.beginPath();c.arc(w*0.82,h*0.58,w*0.04,0,Math.PI*2);c.fill();
+    }
+    function drawPintar(c,w,h){
+        // Palette
+        c.fillStyle='#dfe6e9';
+        c.beginPath();c.ellipse(w*0.45,h*0.4,w*0.3,w*0.22,0,0,Math.PI*2);c.fill();
+        // Paint spots
+        const spots=[{x:0.3,y:0.3,col:'#ff6b6b'},{x:0.5,y:0.25,col:'#ffd93d'},{x:0.6,y:0.35,col:'#74b9ff'},{x:0.35,y:0.48,col:'#55efc4'},{x:0.55,y:0.5,col:'#a29bfe'}];
+        spots.forEach(s=>{c.fillStyle=s.col;c.beginPath();c.arc(w*s.x,h*s.y,w*0.04,0,Math.PI*2);c.fill();});
+        // Brush
+        c.strokeStyle='#d35400';c.lineWidth=w*0.03;c.lineCap='round';
+        c.beginPath();c.moveTo(w*0.7,h*0.15);c.lineTo(w*0.55,h*0.55);c.stroke();
+        c.fillStyle='#e84393';
+        c.beginPath();c.arc(w*0.55,h*0.57,w*0.04,0,Math.PI*2);c.fill();
+    }
+    function drawColorir(c,w,h){
+        // Crayon
+        c.fillStyle='#e74c3c';
+        c.beginPath();c.roundRect(w*0.15,h*0.15,w*0.12,h*0.45,[w*0.03]);c.fill();
+        c.fillStyle='#c0392b';c.beginPath();c.moveTo(w*0.15,h*0.15);c.lineTo(w*0.21,h*0.05);c.lineTo(w*0.27,h*0.15);c.closePath();c.fill();
+        // Another crayon
+        c.fillStyle='#3498db';
+        c.beginPath();c.roundRect(w*0.35,h*0.2,w*0.12,h*0.4,[w*0.03]);c.fill();
+        c.fillStyle='#2980b9';c.beginPath();c.moveTo(w*0.35,h*0.2);c.lineTo(w*0.41,h*0.1);c.lineTo(w*0.47,h*0.2);c.closePath();c.fill();
+        // Scribble
+        c.strokeStyle='#e74c3c';c.lineWidth=3;c.lineCap='round';
+        c.beginPath();c.moveTo(w*0.55,h*0.5);c.bezierCurveTo(w*0.65,h*0.2,w*0.85,h*0.5,w*0.75,h*0.65);c.stroke();
+        c.strokeStyle='#3498db';
+        c.beginPath();c.moveTo(w*0.6,h*0.6);c.bezierCurveTo(w*0.7,h*0.35,w*0.9,h*0.55,w*0.8,h*0.3);c.stroke();
+    }
 
-        <a href="jogo-piano.html" class="game-card">
-            <span class="card-emoji">🎹🎵🎶</span>
-            <span class="card-title">Piano de Cores</span>
-            <span class="card-age">1-3 anos</span>
-        </a>
+    // Build cards
+    const grid = document.getElementById('gamesGrid');
+    games.forEach(game => {
+        const a = document.createElement('a');
+        a.href = game.href;
+        a.className = 'game-card';
 
-        <a href="jogo-cobra.html" class="game-card">
-            <span class="card-emoji">🐍🍎</span>
-            <span class="card-title">Cobrinha</span>
-            <span class="card-age">3+ anos</span>
-        </a>
+        const cvs = document.createElement('canvas');
+        cvs.width = 200;
+        cvs.height = 140;
+        cvs.className = 'card-icon';
+        cvs.style.cssText = 'width:100%;height:auto;border-radius:12px;';
+        const ctx = cvs.getContext('2d');
+        game.draw(ctx, 200, 140);
 
-        <a href="jogo-puzzle.html" class="game-card">
-            <span class="card-emoji">🧩🔷🔶</span>
-            <span class="card-title">Puzzle Simples</span>
-            <span class="card-age">2-4 anos</span>
-        </a>
+        const title = document.createElement('span');
+        title.className = 'card-title';
+        title.textContent = game.title;
 
-        <a href="jogo-numeros.html" class="game-card">
-            <span class="card-emoji">🔢1️⃣2️⃣</span>
-            <span class="card-title">Primeiros Numeros</span>
-            <span class="card-age">2-4 anos</span>
-        </a>
+        const age = document.createElement('span');
+        age.className = 'card-age';
+        age.textContent = game.age;
 
-        <a href="jogo-ingles.html" class="game-card">
-            <span class="card-emoji">🇬🇧🔤📖</span>
-            <span class="card-title">Aprende Ingles</span>
-            <span class="card-age">3+ anos</span>
-        </a>
-
-        <a href="jogo-oceano.html" class="game-card">
-            <span class="card-emoji">🌊🐟🗑️</span>
-            <span class="card-title">Limpa o Oceano</span>
-            <span class="card-age">2+ anos</span>
-        </a>
-
-        <a href="jogo-objetos.html" class="game-card">
-            <span class="card-emoji">🚗🏠👕</span>
-            <span class="card-title">Objetos do Dia</span>
-            <span class="card-age">1-3 anos</span>
-        </a>
-
-        <a href="jogo-pintar.html" class="game-card">
-            <span class="card-emoji">🎨🖌️✨</span>
-            <span class="card-title">Pintar</span>
-            <span class="card-age">1+ anos</span>
-        </a>
-
-        <a href="jogo-colorir.html" class="game-card">
-            <span class="card-emoji">🖍️🐱🚗</span>
-            <span class="card-title">Colorir</span>
-            <span class="card-age">2+ anos</span>
-        </a>
-    </div>
+        a.appendChild(cvs);
+        a.appendChild(title);
+        a.appendChild(age);
+        grid.appendChild(a);
+    });
+    </script>
 
     <footer>
         Primeiros Joguinhos &copy; 2026
