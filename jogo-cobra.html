@@ -74,9 +74,11 @@
             font-size: 12px; color: rgba(255,255,255,0.4);
             text-align: center; pointer-events: none;
         }
+        .ios-unlock{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;backdrop-filter:blur(5px);}.ios-unlock-emoji{font-size:80px;animation:ios-bounce 1s ease-in-out infinite;}.ios-unlock-text{font-size:24px;font-weight:800;color:white;text-shadow:2px 2px 0 rgba(0,0,0,0.2);}@keyframes ios-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
     </style>
 </head>
 <body>
+<div class="ios-unlock" id="iosUnlock"><div class="ios-unlock-emoji">🔊</div><div class="ios-unlock-text">Toca para comecar!</div></div>
     <a href="index.html" class="home-btn">🏠</a>
     <div class="score-display">🍎 <span id="score">0</span></div>
     <canvas id="game"></canvas>
@@ -543,6 +545,27 @@
 
         document.addEventListener('gesturestart', e => e.preventDefault());
         document.addEventListener('dblclick', e => e.preventDefault());
+
+        // iOS audio unlock
+        document.getElementById('iosUnlock').addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            ensureAudio();
+            const b = ctx.createBuffer(1, 1, 22050);
+            const s = ctx.createBufferSource();
+            s.buffer = b;
+            s.connect(ctx.destination);
+            s.start(0);
+            this.remove();
+        }, { once: true });
+        document.getElementById('iosUnlock').addEventListener('click', function(e) {
+            ensureAudio();
+            const b = ctx.createBuffer(1, 1, 22050);
+            const s = ctx.createBufferSource();
+            s.buffer = b;
+            s.connect(ctx.destination);
+            s.start(0);
+            this.remove();
+        }, { once: true });
     </script>
 </body>
 </html>
