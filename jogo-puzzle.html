@@ -37,11 +37,18 @@
         }
         .piece{
             border-radius:8px;cursor:grab;box-shadow:0 4px 12px rgba(0,0,0,0.15);
-            transition:transform 0.15s,box-shadow 0.15s;border:2px solid rgba(255,255,255,0.8);
+            border:2px solid rgba(255,255,255,0.8);
+            transition:box-shadow 0.15s;
         }
-        .piece:active{transform:scale(1.05);box-shadow:0 8px 20px rgba(0,0,0,0.25);}
-        .piece.selected{outline:3px solid #0984e3;outline-offset:2px;}
-        .piece.placed{opacity:0;pointer-events:none;position:absolute;}
+        .piece.dragging{
+            position:fixed;z-index:100;box-shadow:0 12px 30px rgba(0,0,0,0.35);
+            pointer-events:none;transform:scale(1.1);
+        }
+        .piece.returning{
+            transition:left 0.3s ease,top 0.3s ease,transform 0.3s ease;
+            transform:scale(1);
+        }
+        .piece.placed{display:none;}
         .overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,0.4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;opacity:0;pointer-events:none;transition:opacity 0.3s;}
         .overlay.show{opacity:1;pointer-events:all;}
         .ov-emoji{font-size:clamp(60px,16vw,90px);}
@@ -381,21 +388,28 @@
             }
         }
 
+        // Drag state
+        let dragPiece = null;
+        let dragOffX = 0, dragOffY = 0;
+        let dragOrigX = 0, dragOrigY = 0;
+        let allSlots = [];
+        let fullCanvasRef = null;
+
         function loadLevel(){
             const puzzle = puzzles[level % puzzles.length];
             gridSize = level < 2 ? 2 : (level < 5 ? 3 : 4);
             placedCount = 0;
-            selectedPiece = null;
+            dragPiece = null;
 
             document.getElementById('levelBar').textContent = 'Nivel '+(level+1);
-            document.getElementById('hint').textContent = puzzle.name+' - coloca as pecas!';
+            document.getElementById('hint').textContent = puzzle.name+' - arrasta as pecas!';
             document.getElementById('winOverlay').classList.remove('show');
 
-            // Calculate sizes
-            const maxSize = Math.min(window.innerWidth * 0.7, window.innerHeight * 0.35, 300);
+            // Calculate sizes - 20% bigger pieces
+            const maxSize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.38, 340);
             const boardSize = Math.floor(maxSize / gridSize) * gridSize;
             const cellSize = boardSize / gridSize;
-            const pieceDisplaySize = Math.min(cellSize * 0.9, 80);
+            const pieceDisplaySize = Math.min(cellSize * 1.1, 100);
 
             // Draw full image
             const fullCanvas = document.createElement('canvas');
@@ -403,23 +417,22 @@
             fullCanvas.height = boardSize;
             const fullCtx = fullCanvas.getContext('2d');
             puzzle.draw(fullCtx, boardSize, boardSize);
+            fullCanvasRef = fullCanvas;
 
-            // Show preview (small)
+            // Show preview
             const preview = document.getElementById('preview');
             const previewSize = Math.min(80, boardSize * 0.3);
             preview.width = previewSize;
             preview.height = previewSize;
-            const pCtx = preview.getContext('2d');
-            pCtx.drawImage(fullCanvas, 0, 0, previewSize, previewSize);
+            preview.getContext('2d').drawImage(fullCanvas, 0, 0, previewSize, previewSize);
 
             // Setup board
             const board = document.getElementById('board');
             board.style.width = boardSize + 'px';
             board.style.height = boardSize + 'px';
             board.innerHTML = '';
+            allSlots = [];
 
-            // Create slots
-            const slots = [];
             for(let row=0;row<gridSize;row++){
                 for(let col=0;col<gridSize;col++){
                     const slot = document.createElement('div');
@@ -430,47 +443,8 @@
                     slot.style.height = cellSize+'px';
                     slot.dataset.row = row;
                     slot.dataset.col = col;
-
-                    slot.addEventListener('click', () => {
-                        if(!selectedPiece) return;
-                        const pr = parseInt(selectedPiece.dataset.row);
-                        const pc = parseInt(selectedPiece.dataset.col);
-                        if(pr === row && pc === col){
-                            // Correct!
-                            playPlace();
-                            // Place piece image in slot
-                            const img = document.createElement('canvas');
-                            img.width = cellSize;
-                            img.height = cellSize;
-                            img.getContext('2d').drawImage(fullCanvas, col*cellSize, row*cellSize, cellSize, cellSize, 0, 0, cellSize, cellSize);
-                            img.style.width = '100%';
-                            img.style.height = '100%';
-                            img.style.borderRadius = '4px';
-                            slot.appendChild(img);
-                            slot.classList.add('filled');
-                            selectedPiece.classList.add('placed');
-                            selectedPiece = null;
-                            placedCount++;
-                            clearHighlights();
-
-                            if(placedCount === gridSize*gridSize){
-                                setTimeout(()=>{
-                                    playWin();
-                                    spawnConfetti();
-                                    document.getElementById('winText').textContent=['Muito bem!','Genial!','Fantastico!','Boa!'][Math.floor(Math.random()*4)];
-                                    document.getElementById('winSub').textContent=puzzle.name+' completo!';
-                                    document.getElementById('winOverlay').classList.add('show');
-                                },400);
-                            }
-                        } else {
-                            // Wrong slot - flash
-                            slot.classList.add('highlight');
-                            setTimeout(()=>slot.classList.remove('highlight'),300);
-                        }
-                    });
-
                     board.appendChild(slot);
-                    slots.push(slot);
+                    allSlots.push(slot);
                 }
             }
 
@@ -485,37 +459,131 @@
                 const pieceCanvas = document.createElement('canvas');
                 pieceCanvas.width = pieceDisplaySize;
                 pieceCanvas.height = pieceDisplaySize;
-                const pc = pieceCanvas.getContext('2d');
-                pc.drawImage(fullCanvas, c*cellSize, r*cellSize, cellSize, cellSize, 0, 0, pieceDisplaySize, pieceDisplaySize);
-
+                pieceCanvas.getContext('2d').drawImage(fullCanvas, c*cellSize, r*cellSize, cellSize, cellSize, 0, 0, pieceDisplaySize, pieceDisplaySize);
                 pieceCanvas.className = 'piece';
                 pieceCanvas.dataset.row = r;
                 pieceCanvas.dataset.col = c;
-
-                pieceCanvas.addEventListener('click', () => {
-                    if(pieceCanvas.classList.contains('placed')) return;
-                    // Deselect previous
-                    document.querySelectorAll('.piece').forEach(p=>p.classList.remove('selected'));
-                    clearHighlights();
-                    // Select
-                    pieceCanvas.classList.add('selected');
-                    selectedPiece = pieceCanvas;
-                    // Highlight correct slot
-                    slots.forEach(s=>{
-                        if(parseInt(s.dataset.row)===r && parseInt(s.dataset.col)===c && !s.classList.contains('filled')){
-                            s.classList.add('highlight');
-                        }
-                    });
-                });
-
+                pieceCanvas.dataset.cellSize = cellSize;
                 tray.appendChild(pieceCanvas);
             });
         }
 
-        function clearHighlights(){
-            document.querySelectorAll('.puzzle-slot').forEach(s=>s.classList.remove('highlight'));
-            document.querySelectorAll('.piece').forEach(p=>p.classList.remove('selected'));
+        // ===== DRAG AND DROP =====
+        function getPos(e){
+            if(e.touches) return {x:e.touches[0].clientX, y:e.touches[0].clientY};
+            return {x:e.clientX, y:e.clientY};
         }
+        function getEndPos(e){
+            if(e.changedTouches) return {x:e.changedTouches[0].clientX, y:e.changedTouches[0].clientY};
+            return {x:e.clientX, y:e.clientY};
+        }
+
+        function onDragStart(e){
+            const piece = e.target.closest('.piece');
+            if(!piece || piece.classList.contains('placed') || piece.classList.contains('dragging')) return;
+            e.preventDefault();
+
+            const pos = getPos(e);
+            const rect = piece.getBoundingClientRect();
+            dragOffX = pos.x - rect.left;
+            dragOffY = pos.y - rect.top;
+            dragOrigX = rect.left;
+            dragOrigY = rect.top;
+
+            piece.classList.add('dragging');
+            piece.classList.remove('returning');
+            piece.style.left = (pos.x - dragOffX) + 'px';
+            piece.style.top = (pos.y - dragOffY) + 'px';
+            piece.style.width = piece.width + 'px';
+            piece.style.height = piece.height + 'px';
+            dragPiece = piece;
+        }
+
+        function onDragMove(e){
+            if(!dragPiece) return;
+            e.preventDefault();
+            const pos = getPos(e);
+            dragPiece.style.left = (pos.x - dragOffX) + 'px';
+            dragPiece.style.top = (pos.y - dragOffY) + 'px';
+
+            // Highlight slot under cursor
+            allSlots.forEach(s => s.classList.remove('highlight'));
+            const slot = getSlotAt(pos.x, pos.y);
+            if(slot && !slot.classList.contains('filled')) slot.classList.add('highlight');
+        }
+
+        function onDragEnd(e){
+            if(!dragPiece) return;
+            e.preventDefault();
+            const pos = getEndPos(e);
+            const piece = dragPiece;
+            dragPiece = null;
+
+            allSlots.forEach(s => s.classList.remove('highlight'));
+
+            const slot = getSlotAt(pos.x, pos.y);
+            const pr = parseInt(piece.dataset.row);
+            const pc = parseInt(piece.dataset.col);
+            const cs = parseInt(piece.dataset.cellSize);
+
+            if(slot && !slot.classList.contains('filled') &&
+               parseInt(slot.dataset.row) === pr && parseInt(slot.dataset.col) === pc){
+                // CORRECT - snap into place!
+                playPlace();
+                const img = document.createElement('canvas');
+                img.width = cs;
+                img.height = cs;
+                img.getContext('2d').drawImage(fullCanvasRef, pc*cs, pr*cs, cs, cs, 0, 0, cs, cs);
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.borderRadius = '4px';
+                slot.appendChild(img);
+                slot.classList.add('filled');
+                piece.classList.add('placed');
+                piece.classList.remove('dragging');
+                placedCount++;
+
+                if(placedCount === gridSize*gridSize){
+                    setTimeout(()=>{
+                        playWin();
+                        spawnConfetti();
+                        document.getElementById('winText').textContent=['Muito bem!','Genial!','Fantastico!','Boa!'][Math.floor(Math.random()*4)];
+                        document.getElementById('winSub').textContent=puzzles[level%puzzles.length].name+' completo!';
+                        document.getElementById('winOverlay').classList.add('show');
+                    },400);
+                }
+            } else {
+                // WRONG - animate back to tray
+                piece.classList.add('returning');
+                piece.style.left = dragOrigX + 'px';
+                piece.style.top = dragOrigY + 'px';
+                setTimeout(()=>{
+                    piece.classList.remove('dragging','returning');
+                    piece.style.left = '';
+                    piece.style.top = '';
+                    piece.style.width = '';
+                    piece.style.height = '';
+                    piece.style.position = '';
+                    piece.style.zIndex = '';
+                },350);
+            }
+        }
+
+        function getSlotAt(x, y){
+            for(const slot of allSlots){
+                const r = slot.getBoundingClientRect();
+                if(x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return slot;
+            }
+            return null;
+        }
+
+        // Touch + Mouse events
+        document.addEventListener('mousedown', onDragStart);
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
+        document.addEventListener('touchstart', onDragStart, {passive:false});
+        document.addEventListener('touchmove', onDragMove, {passive:false});
+        document.addEventListener('touchend', onDragEnd, {passive:false});
 
         document.getElementById('nextBtn').addEventListener('click',()=>{
             level++;
