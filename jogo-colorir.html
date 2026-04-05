@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Colorir Desenhos - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#dfe6e9">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+        body{overflow:hidden;background:#f0f0f0;min-height:100vh;min-height:100dvh;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;touch-action:none;}
+        .top-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.08);z-index:10;flex-wrap:wrap;justify-content:center;}
+        .home-btn{width:36px;height:36px;border-radius:50%;border:none;background:rgba(0,0,0,0.06);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0;}
+        .cat-btn{padding:5px 12px;border:none;border-radius:14px;font-size:clamp(11px,2.8vw,14px);font-weight:700;cursor:pointer;background:rgba(0,0,0,0.06);color:#2d3436;transition:background 0.2s;flex-shrink:0;}
+        .cat-btn.active{background:#2d3436;color:white;}
+        .cat-btn:active{transform:scale(0.93);}
+        .drawing-list{display:flex;gap:6px;padding:4px 10px;background:rgba(0,0,0,0.03);overflow-x:auto;z-index:5;align-items:center;-webkit-overflow-scrolling:touch;}
+        .drawing-thumb{width:50px;height:50px;border-radius:10px;border:2px solid transparent;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;transition:border-color 0.2s,transform 0.15s;}
+        .drawing-thumb.active{border-color:#2d3436;transform:scale(1.1);}
+        .drawing-thumb:active{transform:scale(0.9);}
+        .canvas-area{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;background:#e8e8e8;}
+        canvas{background:white;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.1);max-width:100%;max-height:100%;}
+        .color-bar{display:flex;align-items:center;gap:5px;padding:8px 10px;background:white;box-shadow:0 -2px 8px rgba(0,0,0,0.08);z-index:10;justify-content:center;flex-wrap:wrap;}
+        .color-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;}
+        .color-btn.active{border-color:#2d3436;transform:scale(1.2);}
+        .color-btn:active{transform:scale(0.9);}
+        .tool-sm{width:36px;height:36px;border-radius:10px;border:none;background:rgba(0,0,0,0.06);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+        .tool-sm.active{background:rgba(0,0,0,0.15);}
+        .tool-sm:active{transform:scale(0.9);}
+        .divider{width:1px;height:26px;background:rgba(0,0,0,0.1);margin:0 2px;flex-shrink:0;}
+        .done-msg{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-size:clamp(40px,10vw,70px);pointer-events:none;z-index:100;animation:done-pop 1.5s ease-out forwards;}
+        @keyframes done-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}30%{transform:translate(-50%,-50%) scale(1)}70%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%) scale(1.1)}}
+        .ios-unlock{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;backdrop-filter:blur(5px);}.ios-unlock-emoji{font-size:80px;animation:ios-bounce 1s ease-in-out infinite;}.ios-unlock-text{font-size:24px;font-weight:800;color:white;text-shadow:2px 2px 0 rgba(0,0,0,0.2);}@keyframes ios-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    </style>
+</head>
+<body>
+<div class="ios-unlock" id="iosUnlock"><div class="ios-unlock-emoji">🖍️</div><div class="ios-unlock-text">Toca para comecar!</div></div>
+
+    <div class="top-bar" id="topBar"></div>
+    <div class="drawing-list" id="drawingList"></div>
+    <div class="canvas-area"><canvas id="canvas"></canvas></div>
+    <div class="color-bar" id="colorBar"></div>
+
+    <script>
+        const canvas=document.getElementById('canvas');
+        const c=canvas.getContext('2d');
+        const AudioCtx=window.AudioContext||window.webkitAudioContext;
+        let actx;
+        function ensureAudio(){if(!actx)actx=new AudioCtx();if(actx.state==='suspended')actx.resume();}
+        document.addEventListener('touchend',function(){ensureAudio();},true);
+        document.addEventListener('click',function(){ensureAudio();},true);
+        function playFill(){
+            ensureAudio();const t=actx.currentTime;
+            const o=actx.createOscillator(),g=actx.createGain();
+            o.type='sine';o.frequency.setValueAtTime(500,t);o.frequency.linearRampToValueAtTime(800,t+0.1);
+            g.gain.setValueAtTime(0.12,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+            o.connect(g).connect(actx.destination);o.start(t);o.stop(t+0.2);
+        }
+
+        // ===== COLORS =====
+        const colors=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#27ae60','#3498db','#2980b9','#9b59b6','#fd79a8','#e84393','#1abc9c','#f39c12','#d35400','#c0392b','#8e44ad','#2c3e50','#ffffff'];
+        let currentColor='#e74c3c';
+
+        // ===== DRAWINGS =====
+        const drawings={
+            'Animais 🐾':[
+                {name:'Gato',icon:'🐱',draw:drawCat},
+                {name:'Cao',icon:'🐶',draw:drawDog},
+                {name:'Peixe',icon:'🐟',draw:drawFish},
+                {name:'Borboleta',icon:'🦋',draw:drawButterfly},
+                {name:'Tartaruga',icon:'🐢',draw:drawTurtle},
+            ],
+            'Transportes 🚗':[
+                {name:'Carro',icon:'🚗',draw:drawCar},
+                {name:'Barco',icon:'⛵',draw:drawBoat},
+                {name:'Foguetao',icon:'🚀',draw:drawRocket},
+                {name:'Aviao',icon:'✈️',draw:drawPlane},
+            ],
+            'Frutas 🍎':[
+                {name:'Maca',icon:'🍎',draw:drawApple},
+                {name:'Banana',icon:'🍌',draw:drawBanana},
+                {name:'Morango',icon:'🍓',draw:drawStrawberry},
+                {name:'Ananas',icon:'🍍',draw:drawPineapple},
+            ],
+            'Natureza 🌸':[
+                {name:'Flor',icon:'🌸',draw:drawFlower},
+                {name:'Arvore',icon:'🌳',draw:drawTree},
+                {name:'Sol',icon:'☀️',draw:drawSun},
+                {name:'Casa',icon:'🏠',draw:drawHouse},
+            ],
+        };
+
+        let currentCat=Object.keys(drawings)[0];
+        let currentDrawing=0;
+        // Store regions for flood fill
+        let regions=[];
+        let filledRegions=new Set();
+        const CW=400,CH=400;
+
+        // ===== OUTLINE DRAWING FUNCTIONS =====
+        function setupCanvas(){
+            canvas.width=CW;canvas.height=CH;
+            c.fillStyle='white';c.fillRect(0,0,CW,CH);
+            regions=[];filledRegions=new Set();
+        }
+
+        function outlineStyle(){
+            c.strokeStyle='#2d3436';c.lineWidth=3;c.lineCap='round';c.lineJoin='round';
+        }
+
+        function addRegion(path,name){
+            regions.push({path,name,filled:false});
+        }
+
+        // --- ANIMALS ---
+        function drawCat(){
+            setupCanvas();outlineStyle();
+            // Head
+            let p=new Path2D();p.arc(200,160,80,0,Math.PI*2);addRegion(p,'head');c.stroke(p);
+            // Left ear
+            p=new Path2D();p.moveTo(140,100);p.lineTo(120,30);p.lineTo(165,85);p.closePath();addRegion(p,'ear1');c.stroke(p);
+            // Right ear
+            p=new Path2D();p.moveTo(260,100);p.lineTo(280,30);p.lineTo(235,85);p.closePath();addRegion(p,'ear2');c.stroke(p);
+            // Body
+            p=new Path2D();p.ellipse(200,310,90,100,0,0,Math.PI*2);addRegion(p,'body');c.stroke(p);
+            // Tail
+            p=new Path2D();p.moveTo(290,290);p.quadraticCurveTo(350,230,340,170);c.lineWidth=5;c.stroke(p);c.lineWidth=3;
+            // Eyes
+            c.fillStyle='#2d3436';
+            c.beginPath();c.ellipse(175,150,8,12,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(225,150,8,12,0,0,Math.PI*2);c.fill();
+            // Nose
+            c.beginPath();c.moveTo(200,175);c.lineTo(193,168);c.lineTo(207,168);c.closePath();c.fill();
+            // Whiskers
+            c.lineWidth=1.5;
+            c.beginPath();c.moveTo(130,170);c.lineTo(180,175);c.stroke();
+            c.beginPath();c.moveTo(130,185);c.lineTo(180,182);c.stroke();
+            c.beginPath();c.moveTo(270,170);c.lineTo(220,175);c.stroke();
+            c.beginPath();c.moveTo(270,185);c.lineTo(220,182);c.stroke();
+            // Mouth
+            c.beginPath();c.moveTo(200,178);c.quadraticCurveTo(188,192,178,188);c.stroke();
+            c.beginPath();c.moveTo(200,178);c.quadraticCurveTo(212,192,222,188);c.stroke();
+        }
+
+        function drawDog(){
+            setupCanvas();outlineStyle();
+            let p=new Path2D();p.arc(200,160,80,0,Math.PI*2);addRegion(p,'head');c.stroke(p);
+            // Floppy ears
+            p=new Path2D();p.ellipse(120,175,30,55,-0.3,0,Math.PI*2);addRegion(p,'ear1');c.stroke(p);
+            p=new Path2D();p.ellipse(280,175,30,55,0.3,0,Math.PI*2);addRegion(p,'ear2');c.stroke(p);
+            // Body
+            p=new Path2D();p.ellipse(200,320,95,90,0,0,Math.PI*2);addRegion(p,'body');c.stroke(p);
+            // Muzzle
+            p=new Path2D();p.ellipse(200,190,35,25,0,0,Math.PI*2);addRegion(p,'muzzle');c.stroke(p);
+            // Eyes
+            c.fillStyle='#2d3436';
+            c.beginPath();c.arc(175,145,8,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(225,145,8,0,Math.PI*2);c.fill();
+            // Nose
+            c.beginPath();c.ellipse(200,180,10,7,0,0,Math.PI*2);c.fill();
+            // Mouth
+            c.beginPath();c.moveTo(200,187);c.lineTo(200,200);c.stroke();
+            c.beginPath();c.arc(190,200,10,0,Math.PI*0.5);c.stroke();
+            // Tongue
+            p=new Path2D();p.ellipse(200,212,8,12,0,0,Math.PI*2);addRegion(p,'tongue');c.stroke(p);
+            // Tail
+            c.lineWidth=5;c.beginPath();c.moveTo(295,290);c.quadraticCurveTo(350,240,340,190);c.stroke();
+        }
+
+        function drawFish(){
+            setupCanvas();outlineStyle();
+            // Tail
+            let p=new Path2D();p.moveTo(80,200);p.lineTo(40,150);p.lineTo(40,250);p.closePath();addRegion(p,'tail');c.stroke(p);
+            // Body
+            p=new Path2D();p.ellipse(210,200,140,80,0,0,Math.PI*2);addRegion(p,'body');c.stroke(p);
+            // Top fin
+            p=new Path2D();p.moveTo(170,125);p.quadraticCurveTo(210,60,250,125);p.closePath();addRegion(p,'fin1');c.stroke(p);
+            // Bottom fin
+            p=new Path2D();p.moveTo(190,275);p.quadraticCurveTo(210,320,240,275);p.closePath();addRegion(p,'fin2');c.stroke(p);
+            // Eye
+            c.fillStyle='#2d3436';c.beginPath();c.arc(280,185,12,0,Math.PI*2);c.fill();
+            c.fillStyle='white';c.beginPath();c.arc(283,182,4,0,Math.PI*2);c.fill();
+            // Mouth
+            c.beginPath();c.arc(340,205,10,0.3,Math.PI-0.3);c.stroke();
+            // Scales
+            c.lineWidth=1;
+            for(let y=170;y<240;y+=20)for(let x=120;x<280;x+=25){
+                c.beginPath();c.arc(x,y,8,0,Math.PI);c.stroke();
+            }
+        }
+
+        function drawButterfly(){
+            setupCanvas();outlineStyle();
+            // Body
+            c.lineWidth=4;c.beginPath();c.moveTo(200,100);c.lineTo(200,300);c.stroke();c.lineWidth=3;
+            // Left wings
+            let p=new Path2D();p.ellipse(140,160,60,50,-0.2,0,Math.PI*2);addRegion(p,'wing1');c.stroke(p);
+            p=new Path2D();p.ellipse(145,240,50,40,0.2,0,Math.PI*2);addRegion(p,'wing2');c.stroke(p);
+            // Right wings
+            p=new Path2D();p.ellipse(260,160,60,50,0.2,0,Math.PI*2);addRegion(p,'wing3');c.stroke(p);
+            p=new Path2D();p.ellipse(255,240,50,40,-0.2,0,Math.PI*2);addRegion(p,'wing4');c.stroke(p);
+            // Head
+            c.fillStyle='#2d3436';c.beginPath();c.arc(200,95,12,0,Math.PI*2);c.fill();
+            // Antennae
+            c.lineWidth=2;
+            c.beginPath();c.moveTo(200,85);c.quadraticCurveTo(175,50,165,45);c.stroke();
+            c.beginPath();c.arc(165,43,3,0,Math.PI*2);c.fill();
+            c.beginPath();c.moveTo(200,85);c.quadraticCurveTo(225,50,235,45);c.stroke();
+            c.beginPath();c.arc(235,43,3,0,Math.PI*2);c.fill();
+            // Wing spots
+            c.lineWidth=2;
+            [140,260].forEach(wx=>{
+                c.beginPath();c.arc(wx,155,15,0,Math.PI*2);c.stroke();
+            });
+        }
+
+        function drawTurtle(){
+            setupCanvas();outlineStyle();
+            // Shell
+            let p=new Path2D();p.ellipse(200,210,110,80,0,0,Math.PI*2);addRegion(p,'shell');c.stroke(p);
+            // Shell pattern
+            c.lineWidth=2;
+            c.beginPath();c.ellipse(200,210,50,35,0,0,Math.PI*2);c.stroke();
+            c.beginPath();c.moveTo(200,130);c.lineTo(200,290);c.stroke();
+            c.beginPath();c.moveTo(100,210);c.lineTo(300,210);c.stroke();
+            c.lineWidth=3;
+            // Head
+            p=new Path2D();p.ellipse(330,200,30,25,0,0,Math.PI*2);addRegion(p,'head');c.stroke(p);
+            // Legs
+            p=new Path2D();p.ellipse(140,300,25,15,0.3,0,Math.PI*2);addRegion(p,'leg1');c.stroke(p);
+            p=new Path2D();p.ellipse(260,300,25,15,-0.3,0,Math.PI*2);addRegion(p,'leg2');c.stroke(p);
+            p=new Path2D();p.ellipse(140,130,25,15,-0.3,0,Math.PI*2);addRegion(p,'leg3');c.stroke(p);
+            p=new Path2D();p.ellipse(260,130,25,15,0.3,0,Math.PI*2);addRegion(p,'leg4');c.stroke(p);
+            // Tail
+            c.beginPath();c.moveTo(90,215);c.lineTo(60,220);c.stroke();
+            // Eye
+            c.fillStyle='#2d3436';c.beginPath();c.arc(340,195,4,0,Math.PI*2);c.fill();
+        }
+
+        // --- TRANSPORT ---
+        function drawCar(){
+            setupCanvas();outlineStyle();
+            // Body
+            let p=new Path2D();p.moveTo(50,250);p.lineTo(50,200);p.lineTo(120,200);p.lineTo(150,140);p.lineTo(280,140);p.lineTo(310,200);p.lineTo(370,200);p.lineTo(370,250);p.closePath();
+            addRegion(p,'body');c.stroke(p);
+            // Windows
+            p=new Path2D();p.moveTo(155,200);p.lineTo(170,150);p.lineTo(210,150);p.lineTo(210,200);p.closePath();addRegion(p,'win1');c.stroke(p);
+            p=new Path2D();p.moveTo(220,200);p.lineTo(220,150);p.lineTo(270,150);p.lineTo(295,200);p.closePath();addRegion(p,'win2');c.stroke(p);
+            // Wheels
+            c.beginPath();c.arc(120,260,30,0,Math.PI*2);c.stroke();c.beginPath();c.arc(120,260,12,0,Math.PI*2);c.stroke();
+            c.beginPath();c.arc(300,260,30,0,Math.PI*2);c.stroke();c.beginPath();c.arc(300,260,12,0,Math.PI*2);c.stroke();
+            // Headlight
+            p=new Path2D();p.ellipse(365,220,12,10,0,0,Math.PI*2);addRegion(p,'light');c.stroke(p);
+            // Road line
+            c.lineWidth=2;c.setLineDash([10,8]);c.beginPath();c.moveTo(0,300);c.lineTo(400,300);c.stroke();c.setLineDash([]);
+        }
+
+        function drawBoat(){
+            setupCanvas();outlineStyle();
+            // Hull
+            let p=new Path2D();p.moveTo(40,250);p.lineTo(80,320);p.lineTo(320,320);p.lineTo(360,250);p.closePath();addRegion(p,'hull');c.stroke(p);
+            // Cabin
+            p=new Path2D();p.rect(140,180,120,70);addRegion(p,'cabin');c.stroke(p);
+            // Window
+            p=new Path2D();p.arc(200,215,15,0,Math.PI*2);addRegion(p,'window');c.stroke(p);
+            // Mast
+            c.beginPath();c.moveTo(200,180);c.lineTo(200,50);c.stroke();
+            // Sail
+            p=new Path2D();p.moveTo(200,60);p.lineTo(200,170);p.lineTo(310,170);p.closePath();addRegion(p,'sail');c.stroke(p);
+            // Flag
+            p=new Path2D();p.moveTo(200,50);p.lineTo(200,70);p.lineTo(175,60);p.closePath();addRegion(p,'flag');c.stroke(p);
+            // Waves
+            c.lineWidth=2;
+            for(let x=0;x<400;x+=40){c.beginPath();c.arc(x+20,340,15,Math.PI,0);c.stroke();}
+        }
+
+        function drawRocket(){
+            setupCanvas();outlineStyle();
+            // Body
+            let p=new Path2D();p.moveTo(200,30);p.quadraticCurveTo(260,100,260,250);p.lineTo(140,250);p.quadraticCurveTo(140,100,200,30);p.closePath();addRegion(p,'body');c.stroke(p);
+            // Nose cone
+            p=new Path2D();p.arc(200,100,20,0,Math.PI*2);addRegion(p,'window');c.stroke(p);
+            // Fins
+            p=new Path2D();p.moveTo(140,220);p.lineTo(100,300);p.lineTo(140,270);p.closePath();addRegion(p,'fin1');c.stroke(p);
+            p=new Path2D();p.moveTo(260,220);p.lineTo(300,300);p.lineTo(260,270);p.closePath();addRegion(p,'fin2');c.stroke(p);
+            // Fire
+            p=new Path2D();p.moveTo(170,250);p.quadraticCurveTo(175,320,200,350);p.quadraticCurveTo(225,320,230,250);p.closePath();addRegion(p,'fire');c.stroke(p);
+            // Stripes
+            c.lineWidth=2;c.beginPath();c.moveTo(145,180);c.lineTo(255,180);c.stroke();
+            c.beginPath();c.moveTo(145,200);c.lineTo(255,200);c.stroke();
+        }
+
+        function drawPlane(){
+            setupCanvas();outlineStyle();
+            // Body
+            let p=new Path2D();p.moveTo(350,190);p.quadraticCurveTo(380,200,350,210);p.lineTo(80,210);p.quadraticCurveTo(50,200,80,190);p.closePath();addRegion(p,'body');c.stroke(p);
+            // Tail
+            p=new Path2D();p.moveTo(80,190);p.lineTo(50,130);p.lineTo(110,190);p.closePath();addRegion(p,'tail');c.stroke(p);
+            // Wing
+            p=new Path2D();p.moveTo(180,190);p.lineTo(140,130);p.lineTo(250,130);p.lineTo(240,190);p.closePath();addRegion(p,'wing1');c.stroke(p);
+            p=new Path2D();p.moveTo(180,210);p.lineTo(150,270);p.lineTo(250,270);p.lineTo(240,210);p.closePath();addRegion(p,'wing2');c.stroke(p);
+            // Windows
+            for(let x=150;x<330;x+=30){c.beginPath();c.arc(x,200,5,0,Math.PI*2);c.stroke();}
+            // Cockpit
+            p=new Path2D();p.ellipse(340,200,18,12,0,0,Math.PI*2);addRegion(p,'cockpit');c.stroke(p);
+        }
+
+        // --- FRUITS ---
+        function drawApple(){
+            setupCanvas();outlineStyle();
+            let p=new Path2D();p.moveTo(200,100);p.quadraticCurveTo(90,100,80,220);p.quadraticCurveTo(80,350,200,350);p.quadraticCurveTo(320,350,320,220);p.quadraticCurveTo(310,100,200,100);p.closePath();addRegion(p,'apple');c.stroke(p);
+            // Stem
+            c.lineWidth=4;c.beginPath();c.moveTo(200,100);c.quadraticCurveTo(205,60,195,50);c.stroke();c.lineWidth=3;
+            // Leaf
+            p=new Path2D();p.moveTo(200,80);p.quadraticCurveTo(240,50,260,70);p.quadraticCurveTo(240,85,200,80);p.closePath();addRegion(p,'leaf');c.stroke(p);
+            // Highlight
+            c.lineWidth=2;c.beginPath();c.ellipse(160,180,15,30,-0.3,0,Math.PI*2);c.stroke();
+        }
+
+        function drawBanana(){
+            setupCanvas();outlineStyle();
+            let p=new Path2D();p.moveTo(100,300);p.quadraticCurveTo(60,200,120,120);p.quadraticCurveTo(180,60,250,80);p.lineTo(260,90);p.quadraticCurveTo(190,80,140,140);p.quadraticCurveTo(80,220,120,310);p.closePath();addRegion(p,'banana');c.stroke(p);
+            // Tip
+            c.lineWidth=4;c.beginPath();c.moveTo(250,80);c.quadraticCurveTo(280,65,290,75);c.stroke();
+            // Lines
+            c.lineWidth=1.5;c.beginPath();c.moveTo(110,280);c.quadraticCurveTo(90,200,130,130);c.stroke();
+        }
+
+        function drawStrawberry(){
+            setupCanvas();outlineStyle();
+            let p=new Path2D();p.moveTo(200,80);p.quadraticCurveTo(90,120,100,240);p.quadraticCurveTo(130,360,200,370);p.quadraticCurveTo(270,360,300,240);p.quadraticCurveTo(310,120,200,80);p.closePath();addRegion(p,'berry');c.stroke(p);
+            // Leaves
+            p=new Path2D();p.moveTo(200,85);p.quadraticCurveTo(150,50,130,70);p.quadraticCurveTo(160,85,200,85);p.closePath();addRegion(p,'leaf1');c.stroke(p);
+            p=new Path2D();p.moveTo(200,85);p.quadraticCurveTo(250,50,270,70);p.quadraticCurveTo(240,85,200,85);p.closePath();addRegion(p,'leaf2');c.stroke(p);
+            // Seeds
+            c.fillStyle='#2d3436';
+            [[170,180],[230,180],[150,240],[250,240],[180,300],[220,300],[200,220]].forEach(([x,y])=>{
+                c.beginPath();c.ellipse(x,y,3,5,0,0,Math.PI*2);c.fill();
+            });
+        }
+
+        function drawPineapple(){
+            setupCanvas();outlineStyle();
+            let p=new Path2D();p.ellipse(200,250,80,120,0,0,Math.PI*2);addRegion(p,'body');c.stroke(p);
+            // Crown leaves
+            p=new Path2D();p.moveTo(200,130);p.quadraticCurveTo(180,60,160,40);p.quadraticCurveTo(175,80,200,130);p.closePath();addRegion(p,'leaf1');c.stroke(p);
+            p=new Path2D();p.moveTo(200,130);p.quadraticCurveTo(200,50,200,30);p.quadraticCurveTo(200,70,200,130);c.stroke(p);
+            p=new Path2D();p.moveTo(200,130);p.quadraticCurveTo(220,60,240,40);p.quadraticCurveTo(225,80,200,130);p.closePath();addRegion(p,'leaf2');c.stroke(p);
+            // Diamond pattern
+            c.lineWidth=1.5;
+            for(let y=170;y<340;y+=25)for(let x=140;x<260;x+=25){
+                c.beginPath();c.moveTo(x,y);c.lineTo(x+12,y-12);c.lineTo(x+25,y);c.lineTo(x+12,y+12);c.closePath();c.stroke();
+            }
+        }
+
+        // --- NATURE ---
+        function drawFlower(){
+            setupCanvas();outlineStyle();
+            // Stem
+            c.lineWidth=5;c.beginPath();c.moveTo(200,200);c.lineTo(200,380);c.stroke();c.lineWidth=3;
+            // Leaves
+            let p=new Path2D();p.moveTo(200,280);p.quadraticCurveTo(140,260,130,280);p.quadraticCurveTo(150,300,200,280);p.closePath();addRegion(p,'leaf1');c.stroke(p);
+            p=new Path2D();p.moveTo(200,320);p.quadraticCurveTo(260,300,270,320);p.quadraticCurveTo(250,340,200,320);p.closePath();addRegion(p,'leaf2');c.stroke(p);
+            // Petals
+            for(let i=0;i<6;i++){
+                const angle=(Math.PI*2*i)/6 - Math.PI/2;
+                const px=200+Math.cos(angle)*65;
+                const py=150+Math.sin(angle)*65;
+                p=new Path2D();p.ellipse(px,py,35,22,angle,0,Math.PI*2);addRegion(p,'petal'+i);c.stroke(p);
+            }
+            // Center
+            p=new Path2D();p.arc(200,150,25,0,Math.PI*2);addRegion(p,'center');c.stroke(p);
+        }
+
+        function drawTree(){
+            setupCanvas();outlineStyle();
+            // Trunk
+            let p=new Path2D();p.rect(175,220,50,160);addRegion(p,'trunk');c.stroke(p);
+            // Canopy layers
+            p=new Path2D();p.moveTo(200,30);p.lineTo(100,160);p.lineTo(300,160);p.closePath();addRegion(p,'top');c.stroke(p);
+            p=new Path2D();p.moveTo(200,80);p.lineTo(80,220);p.lineTo(320,220);p.closePath();addRegion(p,'mid');c.stroke(p);
+            p=new Path2D();p.moveTo(200,130);p.lineTo(60,280);p.lineTo(340,280);p.closePath();addRegion(p,'bot');c.stroke(p);
+        }
+
+        function drawSun(){
+            setupCanvas();outlineStyle();
+            // Rays
+            for(let i=0;i<12;i++){
+                const angle=(Math.PI*2*i)/12;
+                const x1=200+Math.cos(angle)*80;
+                const y1=200+Math.sin(angle)*80;
+                const x2=200+Math.cos(angle)*140;
+                const y2=200+Math.sin(angle)*140;
+                let p=new Path2D();
+                if(i%2===0){
+                    p.moveTo(x1,y1);
+                    const la=angle-0.15,ra=angle+0.15;
+                    p.lineTo(200+Math.cos(la)*130,200+Math.sin(la)*130);
+                    p.lineTo(x2,y2);
+                    p.lineTo(200+Math.cos(ra)*130,200+Math.sin(ra)*130);
+                    p.closePath();addRegion(p,'ray'+i);c.stroke(p);
+                } else {
+                    c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();
+                }
+            }
+            // Face circle
+            let p=new Path2D();p.arc(200,200,75,0,Math.PI*2);addRegion(p,'face');c.stroke(p);
+            // Eyes
+            c.fillStyle='#2d3436';
+            c.beginPath();c.arc(175,185,8,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(225,185,8,0,Math.PI*2);c.fill();
+            // Smile
+            c.lineWidth=3;c.beginPath();c.arc(200,205,30,0.2,Math.PI-0.2);c.stroke();
+        }
+
+        function drawHouse(){
+            setupCanvas();outlineStyle();
+            // Walls
+            let p=new Path2D();p.rect(80,180,240,190);addRegion(p,'wall');c.stroke(p);
+            // Roof
+            p=new Path2D();p.moveTo(60,185);p.lineTo(200,60);p.lineTo(340,185);p.closePath();addRegion(p,'roof');c.stroke(p);
+            // Door
+            p=new Path2D();p.rect(170,270,60,100);addRegion(p,'door');c.stroke(p);
+            c.beginPath();c.arc(220,325,4,0,Math.PI*2);c.stroke();
+            // Windows
+            p=new Path2D();p.rect(100,220,55,45);addRegion(p,'win1');c.stroke(p);
+            p=new Path2D();p.rect(245,220,55,45);addRegion(p,'win2');c.stroke(p);
+            // Window cross
+            c.lineWidth=2;
+            c.beginPath();c.moveTo(127,220);c.lineTo(127,265);c.stroke();
+            c.beginPath();c.moveTo(100,242);c.lineTo(155,242);c.stroke();
+            c.beginPath();c.moveTo(272,220);c.lineTo(272,265);c.stroke();
+            c.beginPath();c.moveTo(245,242);c.lineTo(300,242);c.stroke();
+            // Chimney
+            c.lineWidth=3;p=new Path2D();p.rect(260,80,35,80);addRegion(p,'chimney');c.stroke(p);
+        }
+
+        // ===== FLOOD FILL =====
+        function floodFill(startX, startY, fillColor){
+            const imgData=c.getImageData(0,0,CW,CH);
+            const data=imgData.data;
+            const idx=(y,x)=>(y*CW+x)*4;
+            const startIdx=idx(startY,startX);
+            const startR=data[startIdx],startG=data[startIdx+1],startB=data[startIdx+2],startA=data[startIdx+3];
+            // Parse fill color
+            const tmp=document.createElement('canvas');tmp.width=1;tmp.height=1;
+            const tc=tmp.getContext('2d');tc.fillStyle=fillColor;tc.fillRect(0,0,1,1);
+            const fd=tc.getImageData(0,0,1,1).data;
+            // Don't fill if same color or on black outline
+            if(startR<40&&startG<40&&startB<40) return false;
+            if(startR===fd[0]&&startG===fd[1]&&startB===fd[2]) return false;
+            const match=(i)=>data[i]===startR&&data[i+1]===startG&&data[i+2]===startB&&data[i+3]===startA;
+            const stack=[[startX,startY]];
+            const visited=new Set();
+            while(stack.length>0){
+                const [x,y]=stack.pop();
+                const i=idx(y,x);
+                if(x<0||x>=CW||y<0||y>=CH)continue;
+                const key=y*CW+x;
+                if(visited.has(key))continue;
+                if(!match(i))continue;
+                visited.add(key);
+                data[i]=fd[0];data[i+1]=fd[1];data[i+2]=fd[2];data[i+3]=255;
+                stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+            }
+            c.putImageData(imgData,0,0);
+            return true;
+        }
+
+        // ===== INTERACTION =====
+        canvas.addEventListener('click',(e)=>{
+            const rect=canvas.getBoundingClientRect();
+            const scaleX=CW/rect.width;
+            const scaleY=CH/rect.height;
+            const x=Math.floor((e.clientX-rect.left)*scaleX);
+            const y=Math.floor((e.clientY-rect.top)*scaleY);
+            if(x<0||x>=CW||y<0||y>=CH)return;
+            if(floodFill(x,y,currentColor)){
+                playFill();
+                filledRegions.add(x+','+y);
+            }
+        });
+
+        canvas.addEventListener('touchend',(e)=>{
+            e.preventDefault();
+            const touch=e.changedTouches[0];
+            const rect=canvas.getBoundingClientRect();
+            const scaleX=CW/rect.width;
+            const scaleY=CH/rect.height;
+            const x=Math.floor((touch.clientX-rect.left)*scaleX);
+            const y=Math.floor((touch.clientY-rect.top)*scaleY);
+            if(x<0||x>=CW||y<0||y>=CH)return;
+            if(floodFill(x,y,currentColor)){
+                playFill();
+                filledRegions.add(x+','+y);
+            }
+        },{passive:false});
+
+        // ===== BUILD UI =====
+        function buildUI(){
+            const topBar=document.getElementById('topBar');
+            topBar.innerHTML='<a href="index.html" class="home-btn">🏠</a><div class="divider"></div>';
+            Object.keys(drawings).forEach(cat=>{
+                const btn=document.createElement('button');
+                btn.className='cat-btn'+(cat===currentCat?' active':'');
+                btn.textContent=cat;
+                btn.addEventListener('click',()=>{currentCat=cat;currentDrawing=0;buildUI();loadDrawing();});
+                topBar.appendChild(btn);
+            });
+
+            const list=document.getElementById('drawingList');
+            list.innerHTML='';
+            drawings[currentCat].forEach((d,i)=>{
+                const thumb=document.createElement('button');
+                thumb.className='drawing-thumb'+(i===currentDrawing?' active':'');
+                thumb.textContent=d.icon;
+                thumb.addEventListener('click',()=>{currentDrawing=i;buildUI();loadDrawing();});
+                list.appendChild(thumb);
+            });
+
+            const colorBar=document.getElementById('colorBar');
+            colorBar.innerHTML='';
+            colors.forEach(col=>{
+                const btn=document.createElement('button');
+                btn.className='color-btn'+(col===currentColor?' active':'');
+                btn.style.background=col;
+                if(col==='#ffffff')btn.style.borderColor='#ccc';
+                btn.addEventListener('click',()=>{
+                    currentColor=col;
+                    document.querySelectorAll('.color-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+                colorBar.appendChild(btn);
+            });
+        }
+
+        function loadDrawing(){
+            const d=drawings[currentCat][currentDrawing];
+            filledRegions=new Set();
+            d.draw();
+        }
+
+        buildUI();
+        loadDrawing();
+
+        document.addEventListener('gesturestart',e=>e.preventDefault());
+        document.addEventListener('dblclick',e=>e.preventDefault());
+
+        // iOS audio unlock
+        (function(){
+            var unlock=document.getElementById('iosUnlock');
+            var silentMP3='data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA';
+            function doUnlock(e){if(e)e.preventDefault();try{var a=new Audio(silentMP3);a.volume=0.01;a.play().catch(function(){});}catch(err){}var AC=window.AudioContext||window.webkitAudioContext;if(!actx)actx=new AC();if(actx.state==='suspended')actx.resume();try{var o=actx.createOscillator();var g=actx.createGain();g.gain.value=0.001;o.connect(g);g.connect(actx.destination);o.start(0);o.stop(actx.currentTime+0.05);}catch(err){}unlock.style.display='none';document.removeEventListener('touchstart',doUnlock,true);document.removeEventListener('touchend',doUnlock,true);document.removeEventListener('click',doUnlock,true);}
+            unlock.addEventListener('touchend',doUnlock);unlock.addEventListener('click',doUnlock);document.addEventListener('touchstart',doUnlock,true);document.addEventListener('touchend',doUnlock,true);
+        })();
+    </script>
+</body>
+</html>
