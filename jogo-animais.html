@@ -378,6 +378,9 @@
             if (!ctx) ctx = new AudioCtx();
             if (ctx.state === 'suspended') ctx.resume();
         }
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
 
         // Helper: create white noise buffer
         function noiseBuffer(duration) {
@@ -1137,7 +1140,7 @@
                 btn.appendChild(nameSpan);
                 btn.setAttribute('aria-label', animal.sound);
 
-                btn.addEventListener('pointerdown', (e) => {
+                btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     onAnimalClick(e, animal);
                 });

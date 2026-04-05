@@ -80,6 +80,9 @@
             if (!audioCtx) audioCtx = new AudioCtx();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
 
         function playPop(pitch) {
             ensureAudio();
@@ -278,7 +281,7 @@
             }
         }
 
-        canvas.addEventListener('pointerdown', (e) => {
+        canvas.addEventListener('click', (e) => {
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
             handlePop(e.clientX - rect.left, e.clientY - rect.top);

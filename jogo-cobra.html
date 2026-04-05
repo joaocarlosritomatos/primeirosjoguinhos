@@ -121,6 +121,9 @@
             if (!ctx) ctx = new AudioCtx();
             if (ctx.state === 'suspended') ctx.resume();
         }
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
         function playEat() {
             ensureAudio();
             const t = ctx.currentTime;
@@ -528,11 +531,11 @@
         });
 
         // Buttons
-        document.getElementById('startBtn').addEventListener('pointerdown', (e) => {
+        document.getElementById('startBtn').addEventListener('click', (e) => {
             e.preventDefault();
             startGame();
         });
-        document.getElementById('retryBtn').addEventListener('pointerdown', (e) => {
+        document.getElementById('retryBtn').addEventListener('click', (e) => {
             e.preventDefault();
             startGame();
         });

@@ -210,6 +210,9 @@
             if (!ctx) ctx = new AudioCtx();
             if (ctx.state === 'suspended') ctx.resume();
         }
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
 
         // Notes (C major scale + high C)
         const notes = [
@@ -269,7 +272,7 @@
             const key = document.createElement('button');
             key.className = 'key';
             key.innerHTML = `<span>${note.emoji}</span><span class="note-name">${note.name}</span>`;
-            key.addEventListener('pointerdown', (e) => {
+            key.addEventListener('click', (e) => {
                 e.preventDefault();
                 onKeyPress(i, key);
             });
@@ -410,7 +413,7 @@
                 btn.className = 'song-btn';
                 btn.id = 'song-' + i;
                 btn.innerHTML = `<span class="song-emoji">${song.emoji}</span><span class="song-name">${song.name}</span>`;
-                btn.addEventListener('pointerdown', (e) => {
+                btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     ensureAudio();
                     playSong(i);

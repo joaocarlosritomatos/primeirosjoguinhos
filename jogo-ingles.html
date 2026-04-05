@@ -165,6 +165,9 @@
         const AudioCtx=window.AudioContext||window.webkitAudioContext;
         let ctx;
         function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
         function playCorrect(){
             ensureAudio();const t=ctx.currentTime;
             [523,659,784].forEach((f,i)=>{
@@ -309,7 +312,7 @@
                 const btn=document.createElement('button');
                 btn.className='cat-tab'+(cat===currentCat?' active':'');
                 btn.textContent=cat;
-                btn.addEventListener('pointerdown',(e)=>{
+                btn.addEventListener('click',(e)=>{
                     e.preventDefault();
                     currentCat=cat;
                     buildTabs();
@@ -377,7 +380,7 @@
                 const btn=document.createElement('button');
                 btn.className='choice';
                 btn.innerHTML=`<span>${opt.emoji}</span> <span>${opt.text}</span>`;
-                btn.addEventListener('pointerdown',(e)=>{
+                btn.addEventListener('click',(e)=>{
                     e.preventDefault();
                     if(waiting)return;
                     if(opt.correct){
@@ -402,7 +405,7 @@
             });
         }
 
-        document.getElementById('rcBtn').addEventListener('pointerdown',(e)=>{
+        document.getElementById('rcBtn').addEventListener('click',(e)=>{
             e.preventDefault();
             startRound();
         });

@@ -142,6 +142,9 @@
         const AudioCtx=window.AudioContext||window.webkitAudioContext;
         let ctx;
         function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
         function playCorrect(){
             ensureAudio();const t=ctx.currentTime;
             [523,659,784].forEach((f,i)=>{
@@ -220,7 +223,7 @@
                 const btn=document.createElement('button');
                 btn.className='count-btn';
                 btn.textContent=num;
-                btn.addEventListener('pointerdown',(e)=>{
+                btn.addEventListener('click',(e)=>{
                     e.preventDefault();
                     if(waiting)return;
                     if(num===count){
@@ -271,7 +274,7 @@
                 const btn=document.createElement('button');
                 btn.className='order-btn';
                 btn.textContent=num;
-                btn.addEventListener('pointerdown',(e)=>{
+                btn.addEventListener('click',(e)=>{
                     e.preventDefault();
                     if(waiting||btn.classList.contains('used'))return;
                     if(num===orderTarget[orderPlaced]){

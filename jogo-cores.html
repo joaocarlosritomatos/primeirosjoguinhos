@@ -151,6 +151,9 @@
             if (!ctx) ctx = new AudioCtx();
             if (ctx.state === 'suspended') ctx.resume();
         }
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
         function playCorrect() {
             ensureAudio();
             const t = ctx.currentTime;
@@ -274,7 +277,7 @@
                 btn.style.background = opt.color.bg;
                 btn.style.fontSize = 'clamp(50px, 13vw, 80px)';
 
-                btn.addEventListener('pointerdown', (e) => {
+                btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     if (waiting) return;
                     if (opt.correct) {

@@ -125,6 +125,9 @@
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         let ctx;
         function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        // Global iOS resume on any touch
+        document.addEventListener('touchend', function() { ensureAudio(); }, true);
+        document.addEventListener('click', function() { ensureAudio(); }, true);
         function playPlace(){
             ensureAudio();const t=ctx.currentTime;
             const o=ctx.createOscillator(),g=ctx.createGain();
@@ -216,7 +219,7 @@
                 slot.dataset.emoji = emoji;
                 slot.dataset.index = i;
 
-                slot.addEventListener('pointerdown', (e) => {
+                slot.addEventListener('click', (e) => {
                     e.preventDefault();
                     if (selectedPiece && selectedPiece.emoji === emoji) {
                         // Correct!
@@ -257,7 +260,7 @@
                 piece.className = 'piece';
                 piece.textContent = emoji;
 
-                piece.addEventListener('pointerdown', (e) => {
+                piece.addEventListener('click', (e) => {
                     e.preventDefault();
                     if (piece.classList.contains('used')) return;
 
@@ -286,7 +289,7 @@
             document.querySelectorAll('.puzzle-slot').forEach(s => s.classList.remove('highlight'));
         }
 
-        document.getElementById('nextBtn').addEventListener('pointerdown', (e) => {
+        document.getElementById('nextBtn').addEventListener('click', (e) => {
             e.preventDefault();
             level++;
             loadLevel();
