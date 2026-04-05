@@ -549,18 +549,37 @@
         // iOS audio unlock
         (function() {
             var unlock = document.getElementById('iosUnlock');
-            function doUnlock() {
+            // Tiny silent MP3 to unlock iOS audio session
+            var silentMP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA';
+
+            function doUnlock(e) {
+                if (e) e.preventDefault();
+
+                // Step 1: Play silent MP3 via HTML5 Audio to unlock iOS audio session
+                try {
+                    var audio = new Audio(silentMP3);
+                    audio.volume = 0.01;
+                    audio.play().catch(function(){});
+                } catch(err) {}
+
+                // Step 2: Create and resume AudioContext
                 var AC = window.AudioContext || window.webkitAudioContext;
                 if (!ctx) ctx = new AC();
-                ctx.resume().then(function() {
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+
+                // Step 3: Play a real tone to fully unlock
+                try {
                     var o = ctx.createOscillator();
                     var g = ctx.createGain();
                     g.gain.value = 0.001;
                     o.connect(g);
                     g.connect(ctx.destination);
                     o.start(0);
-                    o.stop(ctx.currentTime + 0.1);
-                });
+                    o.stop(ctx.currentTime + 0.05);
+                } catch(err) {}
+
                 unlock.style.display = 'none';
                 document.removeEventListener('touchstart', doUnlock, true);
                 document.removeEventListener('touchend', doUnlock, true);
@@ -568,7 +587,6 @@
             }
             unlock.addEventListener('touchend', doUnlock);
             unlock.addEventListener('click', doUnlock);
-            // Also unlock on any touch anywhere (fallback)
             document.addEventListener('touchstart', doUnlock, true);
             document.addEventListener('touchend', doUnlock, true);
         })();

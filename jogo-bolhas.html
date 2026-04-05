@@ -443,18 +443,33 @@
         // iOS audio unlock
         (function() {
             var unlock = document.getElementById('iosUnlock');
-            function doUnlock() {
+            var silentMP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA';
+
+            function doUnlock(e) {
+                if (e) e.preventDefault();
+
+                try {
+                    var audio = new Audio(silentMP3);
+                    audio.volume = 0.01;
+                    audio.play().catch(function(){});
+                } catch(err) {}
+
                 var AC = window.AudioContext || window.webkitAudioContext;
                 if (!audioCtx) audioCtx = new AC();
-                audioCtx.resume().then(function() {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                try {
                     var o = audioCtx.createOscillator();
                     var g = audioCtx.createGain();
                     g.gain.value = 0.001;
                     o.connect(g);
                     g.connect(audioCtx.destination);
                     o.start(0);
-                    o.stop(audioCtx.currentTime + 0.1);
-                });
+                    o.stop(audioCtx.currentTime + 0.05);
+                } catch(err) {}
+
                 unlock.style.display = 'none';
                 document.removeEventListener('touchstart', doUnlock, true);
                 document.removeEventListener('touchend', doUnlock, true);
