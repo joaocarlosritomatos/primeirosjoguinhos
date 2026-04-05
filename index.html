@@ -184,11 +184,18 @@
         .worm-hole {
             position: absolute;
             bottom: 10px;
-            width: 40px;
-            height: 22px;
-            background: radial-gradient(ellipse, #4a8c3f 0%, #3d7a35 60%, transparent 70%);
+            width: 0px;
+            height: 0px;
+            background: radial-gradient(ellipse, #3a6b30 0%, #2d5a25 60%, transparent 70%);
             border-radius: 50%;
             z-index: 8;
+            transition: width 0.4s ease, height 0.4s ease, margin-left 0s;
+            opacity: 0;
+        }
+        .worm-hole.open {
+            width: 44px;
+            height: 20px;
+            opacity: 1;
         }
         .worm {
             position: absolute;
@@ -384,19 +391,29 @@
             lastHole = next;
 
             const hole = holes[next];
-            const holeRect = hole.getBoundingClientRect();
-            const zoneRect = document.getElementById('wormZone').getBoundingClientRect();
-            const holeLeft = hole.offsetLeft + hole.offsetWidth / 2 - 14;
 
-            worm.style.left = holeLeft + 'px';
+            // 1. Open hole first
+            hole.classList.add('open');
 
-            // Restart animation
-            wormBody.style.animation = 'none';
-            void wormBody.offsetWidth;
-            wormBody.style.animation = 'worm-peek 3s ease-in-out';
+            // 2. After hole opens, show worm
+            setTimeout(() => {
+                const holeLeft = hole.offsetLeft + 22 - 14;
+                worm.style.left = holeLeft + 'px';
+
+                // Restart worm animation
+                wormBody.style.animation = 'none';
+                void wormBody.offsetWidth;
+                wormBody.style.animation = 'worm-peek 3s ease-in-out';
+
+                // 3. Close hole after worm goes back down
+                setTimeout(() => {
+                    hole.classList.remove('open');
+                }, 2800);
+
+            }, 450);
 
             // Next peek
-            setTimeout(peekWorm, 3500 + Math.random() * 3000);
+            setTimeout(peekWorm, 4000 + Math.random() * 3000);
         }
 
         // Start after a short delay
