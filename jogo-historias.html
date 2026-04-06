@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Historias - Primeiros Joguinhos</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6c5ce7">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+        body{overflow:hidden;background:#1a1a2e;min-height:100vh;min-height:100dvh;font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;touch-action:none;}
+        .home-btn{position:fixed;top:12px;left:12px;z-index:20;width:42px;height:42px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;}
+
+        /* Story selection */
+        .story-select{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px;}
+        .story-select h2{font-size:clamp(22px,5.5vw,32px);font-weight:900;color:white;text-shadow:2px 2px 0 rgba(0,0,0,0.3);}
+        .story-list{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;max-width:500px;}
+        .story-card{width:clamp(130px,35vw,180px);padding:20px 12px;border:none;border-radius:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform 0.2s;color:white;}
+        .story-card:active{transform:scale(0.95);}
+        .story-card canvas{border-radius:12px;width:100%;height:auto;}
+        .story-card-title{font-size:clamp(12px,3vw,16px);font-weight:700;text-align:center;}
+
+        /* Story viewer */
+        .story-viewer{display:none;flex:1;flex-direction:column;position:relative;}
+        .story-viewer.active{display:flex;}
+        .scene-area{flex:1;position:relative;overflow:hidden;}
+        .scene-area canvas{width:100%;height:100%;display:block;}
+        .text-area{
+            position:absolute;bottom:0;left:0;right:0;
+            background:linear-gradient(transparent,rgba(0,0,0,0.85));
+            padding:60px 20px 20px;
+            display:flex;flex-direction:column;align-items:center;gap:10px;
+        }
+        .story-text{
+            font-size:clamp(16px,4vw,22px);font-weight:600;
+            color:white;text-align:center;line-height:1.5;
+            text-shadow:1px 1px 2px rgba(0,0,0,0.5);
+            max-width:500px;
+        }
+        .nav-btns{display:flex;gap:12px;}
+        .nav-btn{
+            padding:10px 28px;border:none;border-radius:50px;
+            font-size:clamp(14px,3.5vw,18px);font-weight:700;
+            cursor:pointer;transition:transform 0.15s;
+        }
+        .nav-btn:active{transform:scale(0.93);}
+        .btn-prev{background:rgba(255,255,255,0.2);color:white;}
+        .btn-next{background:#55efc4;color:#2d3436;}
+        .btn-listen{background:rgba(255,255,255,0.15);color:white;font-size:20px;padding:10px 16px;}
+        .page-indicator{
+            position:absolute;top:12px;right:16px;z-index:10;
+            font-size:14px;color:rgba(255,255,255,0.5);font-weight:700;
+        }
+        .btn-back{
+            position:absolute;top:12px;left:12px;z-index:10;
+            width:40px;height:40px;border-radius:50%;border:none;
+            background:rgba(255,255,255,0.15);font-size:18px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+        }
+
+        .ios-unlock{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;backdrop-filter:blur(5px);}.ios-unlock-emoji{font-size:80px;animation:ios-bounce 1s ease-in-out infinite;}.ios-unlock-text{font-size:24px;font-weight:800;color:white;text-shadow:2px 2px 0 rgba(0,0,0,0.2);}@keyframes ios-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    </style>
+</head>
+<body>
+<div class="ios-unlock" id="iosUnlock"><div class="ios-unlock-emoji">📖</div><div class="ios-unlock-text">Toca para comecar!</div></div>
+
+    <!-- Story Selection -->
+    <div class="story-select" id="storySelect">
+        <a href="index.html" class="home-btn">🏠</a>
+        <h2>Escolhe uma Historia!</h2>
+        <div class="story-list" id="storyList"></div>
+    </div>
+
+    <!-- Story Viewer -->
+    <div class="story-viewer" id="storyViewer">
+        <button class="btn-back" id="btnBack">◀</button>
+        <span class="page-indicator" id="pageIndicator"></span>
+        <div class="scene-area">
+            <canvas id="sceneCanvas"></canvas>
+        </div>
+        <div class="text-area">
+            <div class="story-text" id="storyText"></div>
+            <div class="nav-btns">
+                <button class="nav-btn btn-prev" id="btnPrev">◀ Anterior</button>
+                <button class="nav-btn btn-listen" id="btnListen">🔊</button>
+                <button class="nav-btn btn-next" id="btnNext">Seguinte ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AudioCtx=window.AudioContext||window.webkitAudioContext;
+        let ctx;
+        function ensureAudio(){if(!ctx)ctx=new AudioCtx();if(ctx.state==='suspended')ctx.resume();}
+        document.addEventListener('touchend',function(){ensureAudio();},true);
+        document.addEventListener('click',function(){ensureAudio();},true);
+
+        function speak(text){
+            if('speechSynthesis' in window){
+                window.speechSynthesis.cancel();
+                const u=new SpeechSynthesisUtterance(text);
+                u.lang='pt-PT';u.rate=0.85;u.pitch=1.1;
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function playPageTurn(){
+            ensureAudio();const t=ctx.currentTime;
+            const n=ctx.createBufferSource();const buf=ctx.createBuffer(1,ctx.sampleRate*0.15,ctx.sampleRate);
+            const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/d.length*8);
+            n.buffer=buf;const f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=2000;
+            const g=ctx.createGain();g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+            n.connect(f).connect(g).connect(ctx.destination);n.start(t);
+        }
+
+        const canvas=document.getElementById('sceneCanvas');
+        const c=canvas.getContext('2d');
+
+        // ===== SCENE DRAWING HELPERS =====
+        function drawSky(c,w,h,color1,color2){
+            const grad=c.createLinearGradient(0,0,0,h*0.7);
+            grad.addColorStop(0,color1);grad.addColorStop(1,color2);
+            c.fillStyle=grad;c.fillRect(0,0,w,h);
+        }
+        function drawGrass(c,w,h,color){
+            c.fillStyle=color||'#55a630';
+            c.beginPath();c.moveTo(0,h*0.65);
+            c.quadraticCurveTo(w*0.25,h*0.6,w*0.5,h*0.65);
+            c.quadraticCurveTo(w*0.75,h*0.7,w,h*0.65);
+            c.lineTo(w,h);c.lineTo(0,h);c.closePath();c.fill();
+        }
+        function drawSun(c,w,h,x,y,r){
+            c.fillStyle='#ffd93d';c.beginPath();c.arc(w*x,h*y,r||w*0.06,0,Math.PI*2);c.fill();
+            // Rays
+            for(let i=0;i<8;i++){
+                const a=Math.PI*2*i/8;
+                c.strokeStyle='#ffd93d';c.lineWidth=2;
+                c.beginPath();c.moveTo(w*x+Math.cos(a)*(r||w*0.06)*1.3,h*y+Math.sin(a)*(r||w*0.06)*1.3);
+                c.lineTo(w*x+Math.cos(a)*(r||w*0.06)*1.8,h*y+Math.sin(a)*(r||w*0.06)*1.8);c.stroke();
+            }
+        }
+        function drawCloud(c,x,y,s){
+            c.fillStyle='rgba(255,255,255,0.8)';
+            c.beginPath();c.arc(x,y,s,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x-s*0.8,y+s*0.2,s*0.7,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x+s*0.9,y+s*0.1,s*0.8,0,Math.PI*2);c.fill();
+        }
+        function drawTree(c,x,y,s){
+            c.fillStyle='#6b4226';c.fillRect(x-s*0.08,y,s*0.16,s*0.5);
+            c.fillStyle='#2d6a1e';c.beginPath();c.arc(x,y,s*0.3,0,Math.PI*2);c.fill();
+            c.fillStyle='#3d8a2e';c.beginPath();c.arc(x-s*0.12,y+s*0.05,s*0.2,0,Math.PI*2);c.fill();
+        }
+
+        // Pig drawing
+        function drawPig(c,x,y,s,emotion){
+            // Body
+            c.fillStyle='#ffb6c1';
+            c.beginPath();c.ellipse(x,y,s*0.35,s*0.3,0,0,Math.PI*2);c.fill();
+            // Head
+            c.beginPath();c.arc(x,y-s*0.3,s*0.25,0,Math.PI*2);c.fill();
+            // Ears
+            c.fillStyle='#ff9aab';
+            c.beginPath();c.ellipse(x-s*0.18,y-s*0.5,s*0.08,s*0.12,-0.3,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(x+s*0.18,y-s*0.5,s*0.08,s*0.12,0.3,0,Math.PI*2);c.fill();
+            // Snout
+            c.fillStyle='#ff8fa3';
+            c.beginPath();c.ellipse(x,y-s*0.22,s*0.12,s*0.08,0,0,Math.PI*2);c.fill();
+            // Nostrils
+            c.fillStyle='#d6606e';
+            c.beginPath();c.ellipse(x-s*0.04,y-s*0.22,s*0.025,s*0.02,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(x+s*0.04,y-s*0.22,s*0.025,s*0.02,0,0,Math.PI*2);c.fill();
+            // Eyes
+            c.fillStyle='#2d3436';
+            c.beginPath();c.arc(x-s*0.1,y-s*0.35,s*0.04,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x+s*0.1,y-s*0.35,s*0.04,0,Math.PI*2);c.fill();
+            c.fillStyle='white';
+            c.beginPath();c.arc(x-s*0.09,y-s*0.36,s*0.015,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x+s*0.11,y-s*0.36,s*0.015,0,Math.PI*2);c.fill();
+            // Mouth
+            if(emotion==='happy'){
+                c.strokeStyle='#d6606e';c.lineWidth=2;
+                c.beginPath();c.arc(x,y-s*0.15,s*0.06,0.2,Math.PI-0.2);c.stroke();
+            } else if(emotion==='scared'){
+                c.fillStyle='#d6606e';
+                c.beginPath();c.ellipse(x,y-s*0.14,s*0.04,s*0.06,0,0,Math.PI*2);c.fill();
+            } else {
+                c.strokeStyle='#d6606e';c.lineWidth=2;
+                c.beginPath();c.arc(x,y-s*0.16,s*0.04,0.2,Math.PI-0.2);c.stroke();
+            }
+            // Legs
+            c.fillStyle='#ffb6c1';
+            c.fillRect(x-s*0.2,y+s*0.2,s*0.1,s*0.15);
+            c.fillRect(x+s*0.1,y+s*0.2,s*0.1,s*0.15);
+            // Hooves
+            c.fillStyle='#d6606e';
+            c.fillRect(x-s*0.2,y+s*0.33,s*0.1,s*0.04);
+            c.fillRect(x+s*0.1,y+s*0.33,s*0.1,s*0.04);
+        }
+
+        // Wolf drawing
+        function drawWolf(c,x,y,s,action){
+            // Body
+            c.fillStyle='#636e72';
+            c.beginPath();c.ellipse(x,y,s*0.4,s*0.28,0,0,Math.PI*2);c.fill();
+            // Head
+            c.fillStyle='#636e72';
+            c.beginPath();c.arc(x+s*0.3,y-s*0.2,s*0.22,0,Math.PI*2);c.fill();
+            // Muzzle
+            c.fillStyle='#b2bec3';
+            c.beginPath();c.ellipse(x+s*0.45,y-s*0.15,s*0.12,s*0.08,0,0,Math.PI*2);c.fill();
+            // Ears
+            c.fillStyle='#4a5568';
+            c.beginPath();c.moveTo(x+s*0.18,y-s*0.35);c.lineTo(x+s*0.12,y-s*0.55);c.lineTo(x+s*0.28,y-s*0.38);c.fill();
+            c.beginPath();c.moveTo(x+s*0.35,y-s*0.38);c.lineTo(x+s*0.35,y-s*0.58);c.lineTo(x+s*0.45,y-s*0.38);c.fill();
+            // Eye
+            c.fillStyle='#ffd93d';
+            c.beginPath();c.ellipse(x+s*0.32,y-s*0.25,s*0.04,s*0.05,0,0,Math.PI*2);c.fill();
+            c.fillStyle='#2d3436';
+            c.beginPath();c.ellipse(x+s*0.33,y-s*0.25,s*0.02,s*0.03,0,0,Math.PI*2);c.fill();
+            // Nose
+            c.fillStyle='#2d3436';
+            c.beginPath();c.arc(x+s*0.55,y-s*0.17,s*0.03,0,Math.PI*2);c.fill();
+            // Mouth / blowing
+            if(action==='blow'){
+                c.strokeStyle='#b2bec3';c.lineWidth=2;
+                c.beginPath();c.moveTo(x+s*0.57,y-s*0.12);
+                c.quadraticCurveTo(x+s*0.7,y-s*0.15,x+s*0.8,y-s*0.1);c.stroke();
+                // Wind lines
+                c.strokeStyle='rgba(180,220,255,0.6)';c.lineWidth=3;
+                for(let i=0;i<4;i++){
+                    const wy=y-s*0.2+i*s*0.08;
+                    c.beginPath();c.moveTo(x+s*0.6,wy);c.lineTo(x+s*0.9+i*s*0.05,wy);c.stroke();
+                }
+            } else {
+                c.strokeStyle='#2d3436';c.lineWidth=1.5;
+                c.beginPath();c.moveTo(x+s*0.55,y-s*0.12);c.lineTo(x+s*0.5,y-s*0.08);c.stroke();
+            }
+            // Tail
+            c.strokeStyle='#636e72';c.lineWidth=s*0.06;c.lineCap='round';
+            c.beginPath();c.moveTo(x-s*0.35,y);c.quadraticCurveTo(x-s*0.5,y-s*0.2,x-s*0.55,y-s*0.3);c.stroke();
+            // Legs
+            c.fillStyle='#636e72';
+            c.fillRect(x-s*0.15,y+s*0.15,s*0.08,s*0.2);
+            c.fillRect(x+s*0.15,y+s*0.15,s*0.08,s*0.2);
+        }
+
+        // House drawings
+        function drawStrawHouse(c,x,y,s){
+            // Straw walls
+            c.fillStyle='#deb887';c.fillRect(x-s*0.3,y-s*0.1,s*0.6,s*0.45);
+            // Straw texture
+            c.strokeStyle='#c4a265';c.lineWidth=1.5;
+            for(let i=0;i<8;i++){
+                const lx=x-s*0.25+i*s*0.07;
+                c.beginPath();c.moveTo(lx,y-s*0.08);c.lineTo(lx,y+s*0.33);c.stroke();
+            }
+            // Roof
+            c.fillStyle='#f0d68a';
+            c.beginPath();c.moveTo(x-s*0.4,y-s*0.08);c.lineTo(x,y-s*0.4);c.lineTo(x+s*0.4,y-s*0.08);c.closePath();c.fill();
+            // Door
+            c.fillStyle='#a0522d';c.fillRect(x-s*0.08,y+s*0.1,s*0.16,s*0.25);
+        }
+        function drawWoodHouse(c,x,y,s){
+            // Wood walls
+            c.fillStyle='#8b6914';c.fillRect(x-s*0.3,y-s*0.1,s*0.6,s*0.45);
+            // Wood planks
+            c.strokeStyle='#6b4f10';c.lineWidth=2;
+            for(let i=0;i<5;i++){
+                const ly=y-s*0.05+i*s*0.09;
+                c.beginPath();c.moveTo(x-s*0.28,ly);c.lineTo(x+s*0.28,ly);c.stroke();
+            }
+            // Roof
+            c.fillStyle='#654321';
+            c.beginPath();c.moveTo(x-s*0.4,y-s*0.08);c.lineTo(x,y-s*0.45);c.lineTo(x+s*0.4,y-s*0.08);c.closePath();c.fill();
+            // Door
+            c.fillStyle='#4a3000';c.fillRect(x-s*0.08,y+s*0.1,s*0.16,s*0.25);
+            // Window
+            c.fillStyle='#87ceeb';c.fillRect(x+s*0.1,y+s*0.02,s*0.1,s*0.08);
+        }
+        function drawBrickHouse(c,x,y,s){
+            // Brick walls
+            c.fillStyle='#c0392b';c.fillRect(x-s*0.35,y-s*0.15,s*0.7,s*0.5);
+            // Bricks
+            c.strokeStyle='#a93226';c.lineWidth=1;
+            for(let row=0;row<6;row++){
+                const by=y-s*0.12+row*s*0.08;
+                c.beginPath();c.moveTo(x-s*0.33,by);c.lineTo(x+s*0.33,by);c.stroke();
+                for(let col=0;col<5;col++){
+                    const bx=x-s*0.33+col*s*0.14+(row%2)*s*0.07;
+                    c.beginPath();c.moveTo(bx,by);c.lineTo(bx,by+s*0.08);c.stroke();
+                }
+            }
+            // Roof
+            c.fillStyle='#922b21';
+            c.beginPath();c.moveTo(x-s*0.45,y-s*0.13);c.lineTo(x,y-s*0.5);c.lineTo(x+s*0.45,y-s*0.13);c.closePath();c.fill();
+            // Door
+            c.fillStyle='#6b3000';c.fillRect(x-s*0.1,y+s*0.08,s*0.2,s*0.27);
+            c.fillStyle='#ffd93d';c.beginPath();c.arc(x+s*0.06,y+s*0.22,s*0.02,0,Math.PI*2);c.fill();
+            // Windows
+            c.fillStyle='#87ceeb';
+            c.fillRect(x-s*0.25,y-s*0.02,s*0.1,s*0.1);
+            c.fillRect(x+s*0.15,y-s*0.02,s*0.1,s*0.1);
+            // Chimney
+            c.fillStyle='#922b21';c.fillRect(x+s*0.2,y-s*0.48,s*0.1,s*0.2);
+        }
+
+        // Debris
+        function drawDebris(c,x,y,s,color){
+            c.fillStyle=color;
+            for(let i=0;i<8;i++){
+                const dx=x+(Math.sin(i*3.7)-0.5)*s*0.8;
+                const dy=y+(Math.cos(i*2.3)-0.5)*s*0.5;
+                c.save();c.translate(dx,dy);c.rotate(i*0.8);
+                c.fillRect(-s*0.06,-s*0.02,s*0.12,s*0.04);
+                c.restore();
+            }
+        }
+
+        // ===== THREE LITTLE PIGS STORY =====
+        const tresPorquinhos = {
+            title: 'Os Tres Porquinhos',
+            cover: function(c,w,h){
+                drawSky(c,w,h,'#87ceeb','#b8e6f0');
+                drawGrass(c,w,h,'#55a630');
+                drawSun(c,w,h,0.85,0.12);
+                drawCloud(c,w*0.2,h*0.15,w*0.04);
+                drawPig(c,w*0.25,h*0.55,w*0.22,'happy');
+                drawPig(c,w*0.5,h*0.52,w*0.22,'happy');
+                drawPig(c,w*0.75,h*0.55,w*0.22,'happy');
+            },
+            pages: [
+                {
+                    text: 'Era uma vez tres porquinhos que viviam com a sua mae. Um dia, ela disse: "Estao crescidos! E hora de construirem as vossas proprias casas."',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#87ceeb','#b8e6f0');
+                        drawGrass(c,w,h,'#55a630');
+                        drawSun(c,w,h,0.85,0.12);
+                        drawCloud(c,w*0.3,h*0.12,w*0.05);
+                        drawCloud(c,w*0.65,h*0.08,w*0.04);
+                        drawTree(c,w*0.1,h*0.45,w*0.15);
+                        drawTree(c,w*0.88,h*0.48,w*0.12);
+                        drawPig(c,w*0.3,h*0.58,w*0.18,'happy');
+                        drawPig(c,w*0.5,h*0.55,w*0.18,'happy');
+                        drawPig(c,w*0.7,h*0.58,w*0.18,'happy');
+                    }
+                },
+                {
+                    text: 'O primeiro porquinho, que era muito preguicoso, construiu a sua casa de palha. Foi muito rapido!',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#87ceeb','#c8e6c9');
+                        drawGrass(c,w,h,'#66bb6a');
+                        drawSun(c,w,h,0.15,0.1);
+                        drawStrawHouse(c,w*0.55,h*0.45,w*0.35);
+                        drawPig(c,w*0.25,h*0.58,w*0.22,'happy');
+                    }
+                },
+                {
+                    text: 'O segundo porquinho construiu a sua casa de madeira. Demorou um pouco mais, mas ficou mais forte.',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#87ceeb','#c8e6c9');
+                        drawGrass(c,w,h,'#55a630');
+                        drawCloud(c,w*0.7,h*0.1,w*0.04);
+                        drawWoodHouse(c,w*0.55,h*0.45,w*0.35);
+                        drawPig(c,w*0.22,h*0.58,w*0.22,'happy');
+                    }
+                },
+                {
+                    text: 'O terceiro porquinho, que era o mais esperto, construiu a sua casa de tijolos. Demorou muito tempo, mas ficou muito forte!',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#87ceeb','#e8f5e9');
+                        drawGrass(c,w,h,'#55a630');
+                        drawSun(c,w,h,0.85,0.1);
+                        drawBrickHouse(c,w*0.55,h*0.42,w*0.38);
+                        drawPig(c,w*0.18,h*0.58,w*0.22,'happy');
+                    }
+                },
+                {
+                    text: 'Um dia, o lobo mau apareceu! Foi a casa de palha e disse: "Vou soprar e a tua casa vai voar!"',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#78909c','#b0bec5');
+                        drawGrass(c,w,h,'#4a8c3f');
+                        drawStrawHouse(c,w*0.6,h*0.45,w*0.3);
+                        drawWolf(c,w*0.2,h*0.5,w*0.28,'blow');
+                        drawPig(c,w*0.6,h*0.58,w*0.15,'scared');
+                    }
+                },
+                {
+                    text: 'O lobo soprou com toda a forca... e a casa de palha voou pelos ares! O porquinho fugiu para a casa do irmao!',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#78909c','#90a4ae');
+                        drawGrass(c,w,h,'#4a8c3f');
+                        drawDebris(c,w*0.6,h*0.35,w*0.4,'#deb887');
+                        drawWolf(c,w*0.25,h*0.5,w*0.28,'blow');
+                        drawPig(c,w*0.75,h*0.55,w*0.15,'scared');
+                    }
+                },
+                {
+                    text: 'O lobo foi a casa de madeira. "Vou soprar e a tua casa vai voar!" Ele soprou com muita forca...',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#607d8b','#90a4ae');
+                        drawGrass(c,w,h,'#3d7a35');
+                        drawWoodHouse(c,w*0.6,h*0.45,w*0.32);
+                        drawWolf(c,w*0.18,h*0.5,w*0.28,'blow');
+                        drawPig(c,w*0.55,h*0.58,w*0.12,'scared');
+                        drawPig(c,w*0.68,h*0.58,w*0.12,'scared');
+                    }
+                },
+                {
+                    text: 'A casa de madeira tambem caiu! Os dois porquinhos correram para a casa de tijolos do irmao mais velho.',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#607d8b','#78909c');
+                        drawGrass(c,w,h,'#3d7a35');
+                        drawDebris(c,w*0.35,h*0.4,w*0.35,'#8b6914');
+                        drawBrickHouse(c,w*0.75,h*0.42,w*0.28);
+                        drawPig(c,w*0.55,h*0.58,w*0.12,'scared');
+                        drawPig(c,w*0.65,h*0.58,w*0.12,'scared');
+                    }
+                },
+                {
+                    text: 'O lobo tentou soprar a casa de tijolos. Soprou, soprou, soprou... mas a casa nao se mexeu!',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#546e7a','#78909c');
+                        drawGrass(c,w,h,'#3d7a35');
+                        drawBrickHouse(c,w*0.6,h*0.42,w*0.35);
+                        drawWolf(c,w*0.15,h*0.5,w*0.3,'blow');
+                        // Pigs in window
+                        drawPig(c,w*0.52,h*0.42,w*0.08,'happy');
+                        drawPig(c,w*0.62,h*0.42,w*0.08,'happy');
+                        drawPig(c,w*0.72,h*0.42,w*0.08,'happy');
+                    }
+                },
+                {
+                    text: 'O lobo ficou cansado e foi-se embora. Os tres porquinhos ficaram seguros na casa de tijolos e viveram felizes para sempre!',
+                    draw(c,w,h){
+                        drawSky(c,w,h,'#87ceeb','#e8f5e9');
+                        drawGrass(c,w,h,'#55a630');
+                        drawSun(c,w,h,0.5,0.12,w*0.07);
+                        drawCloud(c,w*0.2,h*0.1,w*0.04);
+                        drawCloud(c,w*0.8,h*0.14,w*0.035);
+                        drawBrickHouse(c,w*0.5,h*0.42,w*0.38);
+                        drawPig(c,w*0.35,h*0.58,w*0.15,'happy');
+                        drawPig(c,w*0.5,h*0.58,w*0.15,'happy');
+                        drawPig(c,w*0.65,h*0.58,w*0.15,'happy');
+                        // Hearts
+                        c.fillStyle='#ff6b6b';c.font=(w*0.04)+'px serif';
+                        c.fillText('\u2665',w*0.3,h*0.3);c.fillText('\u2665',w*0.7,h*0.28);c.fillText('\u2665',w*0.5,h*0.25);
+                    }
+                },
+            ]
+        };
+
+        // All stories
+        const stories = [tresPorquinhos];
+
+        // ===== UI LOGIC =====
+        let currentStory = null;
+        let currentPage = 0;
+
+        function buildStoryList(){
+            const list=document.getElementById('storyList');
+            list.innerHTML='';
+            stories.forEach((story,i)=>{
+                const card=document.createElement('button');
+                card.className='story-card';
+                card.style.background='linear-gradient(145deg,#6c5ce7,#a29bfe)';
+
+                const cvs=document.createElement('canvas');
+                cvs.width=200;cvs.height=140;
+                story.cover(cvs.getContext('2d'),200,140);
+                card.appendChild(cvs);
+
+                const title=document.createElement('span');
+                title.className='story-card-title';
+                title.textContent=story.title;
+                card.appendChild(title);
+
+                card.addEventListener('click',()=>openStory(i));
+                list.appendChild(card);
+            });
+        }
+
+        function openStory(index){
+            currentStory=stories[index];
+            currentPage=0;
+            document.getElementById('storySelect').style.display='none';
+            document.getElementById('storyViewer').classList.add('active');
+            renderPage();
+        }
+
+        function closeStory(){
+            document.getElementById('storyViewer').classList.remove('active');
+            document.getElementById('storySelect').style.display='flex';
+            currentStory=null;
+            window.speechSynthesis.cancel();
+        }
+
+        function renderPage(){
+            if(!currentStory)return;
+            const page=currentStory.pages[currentPage];
+            const total=currentStory.pages.length;
+
+            // Resize canvas
+            const area=document.querySelector('.scene-area');
+            canvas.width=area.clientWidth*2;
+            canvas.height=area.clientHeight*2;
+            c.setTransform(2,0,0,2,0,0);
+            const w=area.clientWidth;
+            const h=area.clientHeight;
+
+            // Draw scene
+            page.draw(c,w,h);
+
+            // Text
+            document.getElementById('storyText').textContent=page.text;
+            document.getElementById('pageIndicator').textContent=(currentPage+1)+' / '+total;
+
+            // Buttons
+            document.getElementById('btnPrev').style.visibility=currentPage>0?'visible':'hidden';
+            document.getElementById('btnNext').textContent=currentPage<total-1?'Seguinte ▶':'Fim ★';
+
+            // Auto-read
+            setTimeout(()=>speak(page.text),500);
+        }
+
+        document.getElementById('btnNext').addEventListener('click',()=>{
+            if(!currentStory)return;
+            playPageTurn();
+            if(currentPage<currentStory.pages.length-1){
+                currentPage++;renderPage();
+            } else {
+                closeStory();
+            }
+        });
+        document.getElementById('btnPrev').addEventListener('click',()=>{
+            if(!currentStory||currentPage<=0)return;
+            playPageTurn();
+            currentPage--;renderPage();
+        });
+        document.getElementById('btnListen').addEventListener('click',()=>{
+            if(!currentStory)return;
+            speak(currentStory.pages[currentPage].text);
+        });
+        document.getElementById('btnBack').addEventListener('click',closeStory);
+
+        buildStoryList();
+
+        document.addEventListener('gesturestart',e=>e.preventDefault());
+        document.addEventListener('dblclick',e=>e.preventDefault());
+
+        // iOS audio unlock
+        (function(){
+            var unlock=document.getElementById('iosUnlock');
+            var silentMP3='data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAABhgFAAAAAAAAAAAAAAAAA';
+            function doUnlock(e){if(e)e.preventDefault();try{var a=new Audio(silentMP3);a.volume=0.01;a.play().catch(function(){});}catch(err){}var AC=window.AudioContext||window.webkitAudioContext;if(!ctx)ctx=new AC();if(ctx.state==='suspended')ctx.resume();try{var o=ctx.createOscillator();var g=ctx.createGain();g.gain.value=0.001;o.connect(g);g.connect(ctx.destination);o.start(0);o.stop(ctx.currentTime+0.05);}catch(err){}unlock.style.display='none';document.removeEventListener('touchstart',doUnlock,true);document.removeEventListener('touchend',doUnlock,true);document.removeEventListener('click',doUnlock,true);}
+            unlock.addEventListener('touchend',doUnlock);unlock.addEventListener('click',doUnlock);document.addEventListener('touchstart',doUnlock,true);document.addEventListener('touchend',doUnlock,true);
+        })();
+    </script>
+</body>
+</html>

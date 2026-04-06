@@ -338,6 +338,7 @@
         { href:'jogo-objetos.html', title:'Objetos do Dia', age:'1-3 anos', draw: drawObjetos },
         { href:'jogo-pintar.html', title:'Pintar', age:'1+ anos', draw: drawPintar },
         { href:'jogo-colorir.html', title:'Colorir', age:'2+ anos', draw: drawColorir },
+        { href:'jogo-historias.html', title:'Historias', age:'2+ anos', draw: drawHistorias },
     ];
 
     // ===== CARD ILLUSTRATIONS =====
@@ -538,6 +539,30 @@
         c.beginPath();c.moveTo(w*0.55,h*0.5);c.bezierCurveTo(w*0.65,h*0.2,w*0.85,h*0.5,w*0.75,h*0.65);c.stroke();
         c.strokeStyle='#3498db';
         c.beginPath();c.moveTo(w*0.6,h*0.6);c.bezierCurveTo(w*0.7,h*0.35,w*0.9,h*0.55,w*0.8,h*0.3);c.stroke();
+    }
+
+    function drawHistorias(c,w,h){
+        // Open book
+        c.fillStyle='#8B4513';
+        c.beginPath();c.roundRect(w*0.1,h*0.15,w*0.38,h*0.55,[w*0.02,0,0,w*0.02]);c.fill();
+        c.fillStyle='#a0522d';
+        c.beginPath();c.roundRect(w*0.52,h*0.15,w*0.38,h*0.55,[0,w*0.02,w*0.02,0]);c.fill();
+        // Pages
+        c.fillStyle='#fff8e7';
+        c.fillRect(w*0.14,h*0.19,w*0.32,h*0.47);
+        c.fillRect(w*0.54,h*0.19,w*0.32,h*0.47);
+        // Text lines
+        c.fillStyle='rgba(0,0,0,0.12)';
+        for(let i=0;i<4;i++){
+            c.fillRect(w*0.18,h*0.25+i*h*0.09,w*0.24,h*0.02);
+            c.fillRect(w*0.58,h*0.25+i*h*0.09,w*0.24,h*0.02);
+        }
+        // Spine
+        c.fillStyle='#6b3410';c.fillRect(w*0.48,h*0.14,w*0.04,h*0.57);
+        // Stars
+        c.fillStyle='#ffd93d';c.font=(w*0.08)+'px serif';
+        c.fillText('\u2605',w*0.3,h*0.45);
+        c.fillText('\u2605',w*0.65,h*0.42);
     }
 
     // Build cards
