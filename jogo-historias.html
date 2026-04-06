@@ -129,119 +129,148 @@
             c.quadraticCurveTo(w*0.75,h*0.7,w,h*0.65);
             c.lineTo(w,h);c.lineTo(0,h);c.closePath();c.fill();
         }
-        function drawSun(c,w,h,x,y,r){
-            c.fillStyle='#ffd93d';c.beginPath();c.arc(w*x,h*y,r||w*0.06,0,Math.PI*2);c.fill();
-            // Rays
+        function drawSun(c,w,h,x,y,r,t){
+            t=t||0;
+            const rad=r||w*0.06;
+            const pulse=rad*(1+Math.sin(t*2)*0.04);
+            c.fillStyle='#ffd93d';c.beginPath();c.arc(w*x,h*y,pulse,0,Math.PI*2);c.fill();
+            // Rays - rotate slowly
             for(let i=0;i<8;i++){
-                const a=Math.PI*2*i/8;
+                const a=Math.PI*2*i/8+t*0.2;
                 c.strokeStyle='#ffd93d';c.lineWidth=2;
-                c.beginPath();c.moveTo(w*x+Math.cos(a)*(r||w*0.06)*1.3,h*y+Math.sin(a)*(r||w*0.06)*1.3);
-                c.lineTo(w*x+Math.cos(a)*(r||w*0.06)*1.8,h*y+Math.sin(a)*(r||w*0.06)*1.8);c.stroke();
+                c.beginPath();c.moveTo(w*x+Math.cos(a)*pulse*1.3,h*y+Math.sin(a)*pulse*1.3);
+                c.lineTo(w*x+Math.cos(a)*pulse*1.8,h*y+Math.sin(a)*pulse*1.8);c.stroke();
             }
         }
-        function drawCloud(c,x,y,s){
+        function drawCloud(c,x,y,s,t){
+            const drift=t?Math.sin(t*0.3)*10:0;
             c.fillStyle='rgba(255,255,255,0.8)';
-            c.beginPath();c.arc(x,y,s,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x-s*0.8,y+s*0.2,s*0.7,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x+s*0.9,y+s*0.1,s*0.8,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x+drift,y,s,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x+drift-s*0.8,y+s*0.2,s*0.7,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x+drift+s*0.9,y+s*0.1,s*0.8,0,Math.PI*2);c.fill();
         }
-        function drawTree(c,x,y,s){
+        function drawTree(c,x,y,s,t){
+            t=t||0;
+            const sway=Math.sin(t*1.5+x)*s*0.03;
             c.fillStyle='#6b4226';c.fillRect(x-s*0.08,y,s*0.16,s*0.5);
-            c.fillStyle='#2d6a1e';c.beginPath();c.arc(x,y,s*0.3,0,Math.PI*2);c.fill();
-            c.fillStyle='#3d8a2e';c.beginPath();c.arc(x-s*0.12,y+s*0.05,s*0.2,0,Math.PI*2);c.fill();
+            c.fillStyle='#2d6a1e';c.beginPath();c.arc(x+sway,y,s*0.3,0,Math.PI*2);c.fill();
+            c.fillStyle='#3d8a2e';c.beginPath();c.arc(x+sway-s*0.12,y+s*0.05,s*0.2,0,Math.PI*2);c.fill();
         }
 
-        // Pig drawing
-        function drawPig(c,x,y,s,emotion){
+        // Pig drawing with animation
+        function drawPig(c,x,y,s,emotion,t){
+            t=t||0;
+            // Bounce and scared shake
+            const bounce=Math.sin(t*3)*s*0.02;
+            const shake=(emotion==='scared')?Math.sin(t*15)*s*0.02:0;
+            const px=x+shake;
+            const py=y+bounce;
             // Body
             c.fillStyle='#ffb6c1';
-            c.beginPath();c.ellipse(x,y,s*0.35,s*0.3,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px,py,s*0.35,s*0.3,0,0,Math.PI*2);c.fill();
+            // Curly tail
+            c.strokeStyle='#ff9aab';c.lineWidth=s*0.04;c.lineCap='round';
+            c.beginPath();
+            const tailX=px-s*0.33;const tailY=py-s*0.05;
+            const tw=Math.sin(t*4)*0.15;
+            c.moveTo(tailX,tailY);
+            c.quadraticCurveTo(tailX-s*0.1,tailY-s*0.12+Math.sin(t*4)*s*0.03,tailX-s*0.05,tailY-s*0.18);
+            c.quadraticCurveTo(tailX+s*0.05+tw*s*0.2,tailY-s*0.25,tailX-s*0.08,tailY-s*0.28+Math.sin(t*4+1)*s*0.02);
+            c.stroke();
             // Head
-            c.beginPath();c.arc(x,y-s*0.3,s*0.25,0,Math.PI*2);c.fill();
+            c.fillStyle='#ffb6c1';
+            c.beginPath();c.arc(px,py-s*0.3,s*0.25,0,Math.PI*2);c.fill();
             // Ears
             c.fillStyle='#ff9aab';
-            c.beginPath();c.ellipse(x-s*0.18,y-s*0.5,s*0.08,s*0.12,-0.3,0,Math.PI*2);c.fill();
-            c.beginPath();c.ellipse(x+s*0.18,y-s*0.5,s*0.08,s*0.12,0.3,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px-s*0.18,py-s*0.5,s*0.08,s*0.12,-0.3,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px+s*0.18,py-s*0.5,s*0.08,s*0.12,0.3,0,Math.PI*2);c.fill();
             // Snout
             c.fillStyle='#ff8fa3';
-            c.beginPath();c.ellipse(x,y-s*0.22,s*0.12,s*0.08,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px,py-s*0.22,s*0.12,s*0.08,0,0,Math.PI*2);c.fill();
             // Nostrils
             c.fillStyle='#d6606e';
-            c.beginPath();c.ellipse(x-s*0.04,y-s*0.22,s*0.025,s*0.02,0,0,Math.PI*2);c.fill();
-            c.beginPath();c.ellipse(x+s*0.04,y-s*0.22,s*0.025,s*0.02,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px-s*0.04,py-s*0.22,s*0.025,s*0.02,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px+s*0.04,py-s*0.22,s*0.025,s*0.02,0,0,Math.PI*2);c.fill();
             // Eyes
             c.fillStyle='#2d3436';
-            c.beginPath();c.arc(x-s*0.1,y-s*0.35,s*0.04,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x+s*0.1,y-s*0.35,s*0.04,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px-s*0.1,py-s*0.35,s*0.04,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px+s*0.1,py-s*0.35,s*0.04,0,Math.PI*2);c.fill();
             c.fillStyle='white';
-            c.beginPath();c.arc(x-s*0.09,y-s*0.36,s*0.015,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x+s*0.11,y-s*0.36,s*0.015,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px-s*0.09,py-s*0.36,s*0.015,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px+s*0.11,py-s*0.36,s*0.015,0,Math.PI*2);c.fill();
             // Mouth
             if(emotion==='happy'){
                 c.strokeStyle='#d6606e';c.lineWidth=2;
-                c.beginPath();c.arc(x,y-s*0.15,s*0.06,0.2,Math.PI-0.2);c.stroke();
+                c.beginPath();c.arc(px,py-s*0.15,s*0.06,0.2,Math.PI-0.2);c.stroke();
             } else if(emotion==='scared'){
                 c.fillStyle='#d6606e';
-                c.beginPath();c.ellipse(x,y-s*0.14,s*0.04,s*0.06,0,0,Math.PI*2);c.fill();
+                c.beginPath();c.ellipse(px,py-s*0.14,s*0.04,s*0.06,0,0,Math.PI*2);c.fill();
             } else {
                 c.strokeStyle='#d6606e';c.lineWidth=2;
-                c.beginPath();c.arc(x,y-s*0.16,s*0.04,0.2,Math.PI-0.2);c.stroke();
+                c.beginPath();c.arc(px,py-s*0.16,s*0.04,0.2,Math.PI-0.2);c.stroke();
             }
             // Legs
             c.fillStyle='#ffb6c1';
-            c.fillRect(x-s*0.2,y+s*0.2,s*0.1,s*0.15);
-            c.fillRect(x+s*0.1,y+s*0.2,s*0.1,s*0.15);
+            c.fillRect(px-s*0.2,py+s*0.2,s*0.1,s*0.15);
+            c.fillRect(px+s*0.1,py+s*0.2,s*0.1,s*0.15);
             // Hooves
             c.fillStyle='#d6606e';
-            c.fillRect(x-s*0.2,y+s*0.33,s*0.1,s*0.04);
-            c.fillRect(x+s*0.1,y+s*0.33,s*0.1,s*0.04);
+            c.fillRect(px-s*0.2,py+s*0.33,s*0.1,s*0.04);
+            c.fillRect(px+s*0.1,py+s*0.33,s*0.1,s*0.04);
         }
 
         // Wolf drawing
-        function drawWolf(c,x,y,s,action){
+        function drawWolf(c,x,y,s,action,t){
+            t=t||0;
+            // Body sway
+            const sway=Math.sin(t*2)*s*0.01;
+            const px=x+sway;
             // Body
             c.fillStyle='#636e72';
-            c.beginPath();c.ellipse(x,y,s*0.4,s*0.28,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px,y,s*0.4,s*0.28,0,0,Math.PI*2);c.fill();
             // Head
             c.fillStyle='#636e72';
-            c.beginPath();c.arc(x+s*0.3,y-s*0.2,s*0.22,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px+s*0.3,y-s*0.2,s*0.22,0,Math.PI*2);c.fill();
             // Muzzle
             c.fillStyle='#b2bec3';
-            c.beginPath();c.ellipse(x+s*0.45,y-s*0.15,s*0.12,s*0.08,0,0,Math.PI*2);c.fill();
+            const jawOpen=(action==='blow')?Math.abs(Math.sin(t*5))*s*0.05:0;
+            c.beginPath();c.ellipse(px+s*0.45,y-s*0.15+jawOpen*0.3,s*0.12,s*0.08+jawOpen*0.3,0,0,Math.PI*2);c.fill();
             // Ears
             c.fillStyle='#4a5568';
-            c.beginPath();c.moveTo(x+s*0.18,y-s*0.35);c.lineTo(x+s*0.12,y-s*0.55);c.lineTo(x+s*0.28,y-s*0.38);c.fill();
-            c.beginPath();c.moveTo(x+s*0.35,y-s*0.38);c.lineTo(x+s*0.35,y-s*0.58);c.lineTo(x+s*0.45,y-s*0.38);c.fill();
+            c.beginPath();c.moveTo(px+s*0.18,y-s*0.35);c.lineTo(px+s*0.12,y-s*0.55);c.lineTo(px+s*0.28,y-s*0.38);c.fill();
+            c.beginPath();c.moveTo(px+s*0.35,y-s*0.38);c.lineTo(px+s*0.35,y-s*0.58);c.lineTo(px+s*0.45,y-s*0.38);c.fill();
             // Eye
             c.fillStyle='#ffd93d';
-            c.beginPath();c.ellipse(x+s*0.32,y-s*0.25,s*0.04,s*0.05,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px+s*0.32,y-s*0.25,s*0.04,s*0.05,0,0,Math.PI*2);c.fill();
             c.fillStyle='#2d3436';
-            c.beginPath();c.ellipse(x+s*0.33,y-s*0.25,s*0.02,s*0.03,0,0,Math.PI*2);c.fill();
+            c.beginPath();c.ellipse(px+s*0.33,y-s*0.25,s*0.02,s*0.03,0,0,Math.PI*2);c.fill();
             // Nose
             c.fillStyle='#2d3436';
-            c.beginPath();c.arc(x+s*0.55,y-s*0.17,s*0.03,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px+s*0.55,y-s*0.17,s*0.03,0,Math.PI*2);c.fill();
             // Mouth / blowing
             if(action==='blow'){
                 c.strokeStyle='#b2bec3';c.lineWidth=2;
-                c.beginPath();c.moveTo(x+s*0.57,y-s*0.12);
-                c.quadraticCurveTo(x+s*0.7,y-s*0.15,x+s*0.8,y-s*0.1);c.stroke();
-                // Wind lines
+                c.beginPath();c.moveTo(px+s*0.57,y-s*0.12+jawOpen);
+                c.quadraticCurveTo(px+s*0.7,y-s*0.15,px+s*0.8,y-s*0.1);c.stroke();
+                // Wind lines - animate moving right
                 c.strokeStyle='rgba(180,220,255,0.6)';c.lineWidth=3;
                 for(let i=0;i<4;i++){
                     const wy=y-s*0.2+i*s*0.08;
-                    c.beginPath();c.moveTo(x+s*0.6,wy);c.lineTo(x+s*0.9+i*s*0.05,wy);c.stroke();
+                    const windOff=(t*s*0.5+i*s*0.1)%(s*0.5);
+                    c.beginPath();c.moveTo(px+s*0.6+windOff,wy);c.lineTo(px+s*0.9+i*s*0.05+windOff,wy);c.stroke();
                 }
             } else {
                 c.strokeStyle='#2d3436';c.lineWidth=1.5;
-                c.beginPath();c.moveTo(x+s*0.55,y-s*0.12);c.lineTo(x+s*0.5,y-s*0.08);c.stroke();
+                c.beginPath();c.moveTo(px+s*0.55,y-s*0.12);c.lineTo(px+s*0.5,y-s*0.08);c.stroke();
             }
-            // Tail
+            // Tail - wags
+            const tailWag=Math.sin(t*3)*0.3;
             c.strokeStyle='#636e72';c.lineWidth=s*0.06;c.lineCap='round';
-            c.beginPath();c.moveTo(x-s*0.35,y);c.quadraticCurveTo(x-s*0.5,y-s*0.2,x-s*0.55,y-s*0.3);c.stroke();
+            c.beginPath();c.moveTo(px-s*0.35,y);c.quadraticCurveTo(px-s*0.5+Math.sin(t*3)*s*0.05,y-s*0.2,px-s*0.55+tailWag*s*0.1,y-s*0.3);c.stroke();
             // Legs
             c.fillStyle='#636e72';
-            c.fillRect(x-s*0.15,y+s*0.15,s*0.08,s*0.2);
-            c.fillRect(x+s*0.15,y+s*0.15,s*0.08,s*0.2);
+            c.fillRect(px-s*0.15,y+s*0.15,s*0.08,s*0.2);
+            c.fillRect(px+s*0.15,y+s*0.15,s*0.08,s*0.2);
         }
 
         // House drawings
@@ -319,183 +348,195 @@
         // ===== THREE LITTLE PIGS STORY =====
         const tresPorquinhos = {
             title: 'Os Tres Porquinhos',
-            cover: function(c,w,h){
+            cover: function(c,w,h,t){
+                t=t||0;
                 drawSky(c,w,h,'#87ceeb','#b8e6f0');
                 drawGrass(c,w,h,'#55a630');
-                drawSun(c,w,h,0.85,0.12);
-                drawCloud(c,w*0.2,h*0.15,w*0.04);
-                drawPig(c,w*0.25,h*0.55,w*0.22,'happy');
-                drawPig(c,w*0.5,h*0.52,w*0.22,'happy');
-                drawPig(c,w*0.75,h*0.55,w*0.22,'happy');
+                drawSun(c,w,h,0.85,0.12,null,t);
+                drawCloud(c,w*0.2,h*0.15,w*0.04,t);
+                drawPig(c,w*0.25,h*0.55,w*0.22,'happy',t);
+                drawPig(c,w*0.5,h*0.52,w*0.22,'happy',t);
+                drawPig(c,w*0.75,h*0.55,w*0.22,'happy',t);
             },
             pages: [
                 {
                     text: 'Era uma vez três porquinhos que viviam com a sua mãe. Um dia, ela disse: "Estão crescidos! É hora de construírem as vossas próprias casas."',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#b8e6f0');
                         drawGrass(c,w,h,'#55a630');
-                        drawSun(c,w,h,0.85,0.12);
-                        drawCloud(c,w*0.3,h*0.12,w*0.05);
-                        drawCloud(c,w*0.65,h*0.08,w*0.04);
-                        drawTree(c,w*0.1,h*0.45,w*0.15);
-                        drawTree(c,w*0.88,h*0.48,w*0.12);
-                        drawPig(c,w*0.3,h*0.58,w*0.18,'happy');
-                        drawPig(c,w*0.5,h*0.55,w*0.18,'happy');
-                        drawPig(c,w*0.7,h*0.58,w*0.18,'happy');
+                        drawSun(c,w,h,0.85,0.12,null,t);
+                        drawCloud(c,w*0.3,h*0.12,w*0.05,t);
+                        drawCloud(c,w*0.65,h*0.08,w*0.04,t);
+                        drawTree(c,w*0.1,h*0.45,w*0.15,t);
+                        drawTree(c,w*0.88,h*0.48,w*0.12,t);
+                        drawPig(c,w*0.3,h*0.58,w*0.18,'happy',t);
+                        drawPig(c,w*0.5,h*0.55,w*0.18,'happy',t);
+                        drawPig(c,w*0.7,h*0.58,w*0.18,'happy',t);
                     }
                 },
                 {
                     text: 'O primeiro porquinho, que era muito preguiçoso, construiu a sua casa de palha. Foi muito rápido!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#c8e6c9');
                         drawGrass(c,w,h,'#66bb6a');
-                        drawSun(c,w,h,0.15,0.1);
+                        drawSun(c,w,h,0.15,0.1,null,t);
                         drawStrawHouse(c,w*0.55,h*0.45,w*0.35);
-                        drawPig(c,w*0.25,h*0.58,w*0.22,'happy');
+                        drawPig(c,w*0.25,h*0.58,w*0.22,'happy',t);
                     }
                 },
                 {
                     text: 'O segundo porquinho construiu a sua casa de madeira. Demorou um pouco mais, mas ficou mais forte.',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#c8e6c9');
                         drawGrass(c,w,h,'#55a630');
-                        drawCloud(c,w*0.7,h*0.1,w*0.04);
+                        drawCloud(c,w*0.7,h*0.1,w*0.04,t);
                         drawWoodHouse(c,w*0.55,h*0.45,w*0.35);
-                        drawPig(c,w*0.22,h*0.58,w*0.22,'happy');
+                        drawPig(c,w*0.22,h*0.58,w*0.22,'happy',t);
                     }
                 },
                 {
                     text: 'O terceiro porquinho, que era o mais esperto, construiu a sua casa de tijolos. Demorou muito tempo, mas ficou muito forte!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#e8f5e9');
                         drawGrass(c,w,h,'#55a630');
-                        drawSun(c,w,h,0.85,0.1);
+                        drawSun(c,w,h,0.85,0.1,null,t);
                         drawBrickHouse(c,w*0.55,h*0.42,w*0.38);
-                        drawPig(c,w*0.18,h*0.58,w*0.22,'happy');
+                        drawPig(c,w*0.18,h*0.58,w*0.22,'happy',t);
                     }
                 },
                 {
                     text: 'Um dia, o lobo mau apareceu! Foi à casa de palha e disse: "Vou soprar e a tua casa vai voar!"',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#78909c','#b0bec5');
                         drawGrass(c,w,h,'#4a8c3f');
                         drawStrawHouse(c,w*0.6,h*0.45,w*0.3);
-                        drawWolf(c,w*0.2,h*0.5,w*0.28,'blow');
-                        drawPig(c,w*0.6,h*0.58,w*0.15,'scared');
+                        drawWolf(c,w*0.2,h*0.5,w*0.28,'blow',t);
+                        drawPig(c,w*0.6,h*0.58,w*0.15,'scared',t);
                     }
                 },
                 {
                     text: 'O lobo soprou com toda a força... e a casa de palha voou pelos ares! O porquinho fugiu para a casa do irmão!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#78909c','#90a4ae');
                         drawGrass(c,w,h,'#4a8c3f');
                         drawDebris(c,w*0.6,h*0.35,w*0.4,'#deb887');
-                        drawWolf(c,w*0.25,h*0.5,w*0.28,'blow');
-                        drawPig(c,w*0.75,h*0.55,w*0.15,'scared');
+                        drawWolf(c,w*0.25,h*0.5,w*0.28,'blow',t);
+                        drawPig(c,w*0.75,h*0.55,w*0.15,'scared',t);
                     }
                 },
                 {
                     text: 'O lobo foi à casa de madeira. "Vou soprar e a tua casa vai voar!" Ele soprou com muita força...',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#607d8b','#90a4ae');
                         drawGrass(c,w,h,'#3d7a35');
                         drawWoodHouse(c,w*0.6,h*0.45,w*0.32);
-                        drawWolf(c,w*0.18,h*0.5,w*0.28,'blow');
-                        drawPig(c,w*0.55,h*0.58,w*0.12,'scared');
-                        drawPig(c,w*0.68,h*0.58,w*0.12,'scared');
+                        drawWolf(c,w*0.18,h*0.5,w*0.28,'blow',t);
+                        drawPig(c,w*0.55,h*0.58,w*0.12,'scared',t);
+                        drawPig(c,w*0.68,h*0.58,w*0.12,'scared',t);
                     }
                 },
                 {
                     text: 'A casa de madeira também caiu! Os dois porquinhos correram para a casa de tijolos do irmão mais velho.',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#607d8b','#78909c');
                         drawGrass(c,w,h,'#3d7a35');
                         drawDebris(c,w*0.35,h*0.4,w*0.35,'#8b6914');
                         drawBrickHouse(c,w*0.75,h*0.42,w*0.28);
-                        drawPig(c,w*0.55,h*0.58,w*0.12,'scared');
-                        drawPig(c,w*0.65,h*0.58,w*0.12,'scared');
+                        drawPig(c,w*0.55,h*0.58,w*0.12,'scared',t);
+                        drawPig(c,w*0.65,h*0.58,w*0.12,'scared',t);
                     }
                 },
                 {
                     text: 'O lobo tentou soprar a casa de tijolos. Soprou, soprou, soprou... mas a casa não se mexeu!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#546e7a','#78909c');
                         drawGrass(c,w,h,'#3d7a35');
                         drawBrickHouse(c,w*0.6,h*0.42,w*0.35);
-                        drawWolf(c,w*0.15,h*0.5,w*0.3,'blow');
+                        drawWolf(c,w*0.15,h*0.5,w*0.3,'blow',t);
                         // Pigs in window
-                        drawPig(c,w*0.52,h*0.42,w*0.08,'happy');
-                        drawPig(c,w*0.62,h*0.42,w*0.08,'happy');
-                        drawPig(c,w*0.72,h*0.42,w*0.08,'happy');
+                        drawPig(c,w*0.52,h*0.42,w*0.08,'happy',t);
+                        drawPig(c,w*0.62,h*0.42,w*0.08,'happy',t);
+                        drawPig(c,w*0.72,h*0.42,w*0.08,'happy',t);
                     }
                 },
                 {
                     text: 'O lobo ficou cansado e foi-se embora. Os três porquinhos ficaram seguros na casa de tijolos e viveram felizes para sempre!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#e8f5e9');
                         drawGrass(c,w,h,'#55a630');
-                        drawSun(c,w,h,0.5,0.12,w*0.07);
-                        drawCloud(c,w*0.2,h*0.1,w*0.04);
-                        drawCloud(c,w*0.8,h*0.14,w*0.035);
+                        drawSun(c,w,h,0.5,0.12,w*0.07,t);
+                        drawCloud(c,w*0.2,h*0.1,w*0.04,t);
+                        drawCloud(c,w*0.8,h*0.14,w*0.035,t);
                         drawBrickHouse(c,w*0.5,h*0.42,w*0.38);
-                        drawPig(c,w*0.35,h*0.58,w*0.15,'happy');
-                        drawPig(c,w*0.5,h*0.58,w*0.15,'happy');
-                        drawPig(c,w*0.65,h*0.58,w*0.15,'happy');
-                        // Hearts
+                        drawPig(c,w*0.35,h*0.58,w*0.15,'happy',t);
+                        drawPig(c,w*0.5,h*0.58,w*0.15,'happy',t);
+                        drawPig(c,w*0.65,h*0.58,w*0.15,'happy',t);
+                        // Hearts - float up and down
                         c.fillStyle='#ff6b6b';c.font=(w*0.04)+'px serif';
-                        c.fillText('\u2665',w*0.3,h*0.3);c.fillText('\u2665',w*0.7,h*0.28);c.fillText('\u2665',w*0.5,h*0.25);
+                        c.fillText('\u2665',w*0.3,h*0.3+Math.sin(t*2)*5);c.fillText('\u2665',w*0.7,h*0.28+Math.sin(t*2+1)*5);c.fillText('\u2665',w*0.5,h*0.25+Math.sin(t*2+2)*5);
                     }
                 },
             ]
         };
 
         // ===== RED RIDING HOOD helpers =====
-        function drawGirl(c,x,y,s,emotion){
-            // Red hood/cape
+        function drawGirl(c,x,y,s,emotion,t){
+            t=t||0;
+            // Walking bounce and scared tremble
+            const bounce=Math.sin(t*4)*s*0.02;
+            const tremble=(emotion==='scared')?Math.sin(t*12)*s*0.01:0;
+            const px=x+tremble;
+            const py=y+bounce;
+            // Red hood/cape - sways in wind
+            c.save();
+            c.translate(px,py-s*0.5);
+            c.rotate(Math.sin(t*2)*0.05);
+            c.translate(-px,-(py-s*0.5));
             c.fillStyle='#e74c3c';
-            c.beginPath();c.moveTo(x-s*0.2,y-s*0.5);
-            c.quadraticCurveTo(x,y-s*0.7,x+s*0.2,y-s*0.5);
-            c.lineTo(x+s*0.25,y+s*0.15);c.lineTo(x-s*0.25,y+s*0.15);c.closePath();c.fill();
+            c.beginPath();c.moveTo(px-s*0.2,py-s*0.5);
+            c.quadraticCurveTo(px,py-s*0.7,px+s*0.2,py-s*0.5);
+            c.lineTo(px+s*0.25,py+s*0.15);c.lineTo(px-s*0.25,py+s*0.15);c.closePath();c.fill();
+            c.restore();
             // Face
             c.fillStyle='#fdbcb4';
-            c.beginPath();c.arc(x,y-s*0.3,s*0.18,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px,py-s*0.3,s*0.18,0,Math.PI*2);c.fill();
             // Hair
             c.fillStyle='#8B4513';
-            c.beginPath();c.arc(x,y-s*0.38,s*0.14,Math.PI,0);c.fill();
+            c.beginPath();c.arc(px,py-s*0.38,s*0.14,Math.PI,0);c.fill();
             // Eyes
             c.fillStyle='#2d3436';
-            c.beginPath();c.arc(x-s*0.07,y-s*0.33,s*0.025,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x+s*0.07,y-s*0.33,s*0.025,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px-s*0.07,py-s*0.33,s*0.025,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px+s*0.07,py-s*0.33,s*0.025,0,Math.PI*2);c.fill();
             c.fillStyle='white';
-            c.beginPath();c.arc(x-s*0.065,y-s*0.335,s*0.01,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x+s*0.075,y-s*0.335,s*0.01,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px-s*0.065,py-s*0.335,s*0.01,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px+s*0.075,py-s*0.335,s*0.01,0,Math.PI*2);c.fill();
             // Cheeks
             c.fillStyle='rgba(255,150,150,0.4)';
-            c.beginPath();c.arc(x-s*0.12,y-s*0.26,s*0.03,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x+s*0.12,y-s*0.26,s*0.03,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px-s*0.12,py-s*0.26,s*0.03,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(px+s*0.12,py-s*0.26,s*0.03,0,Math.PI*2);c.fill();
             // Mouth
             if(emotion==='happy'){
                 c.strokeStyle='#c0392b';c.lineWidth=1.5;
-                c.beginPath();c.arc(x,y-s*0.24,s*0.04,0.2,Math.PI-0.2);c.stroke();
+                c.beginPath();c.arc(px,py-s*0.24,s*0.04,0.2,Math.PI-0.2);c.stroke();
             } else if(emotion==='scared'){
                 c.fillStyle='#c0392b';
-                c.beginPath();c.ellipse(x,y-s*0.23,s*0.03,s*0.04,0,0,Math.PI*2);c.fill();
+                c.beginPath();c.ellipse(px,py-s*0.23,s*0.03,s*0.04,0,0,Math.PI*2);c.fill();
             } else {
                 c.strokeStyle='#c0392b';c.lineWidth=1.5;
-                c.beginPath();c.arc(x,y-s*0.25,s*0.03,0.2,Math.PI-0.2);c.stroke();
+                c.beginPath();c.arc(px,py-s*0.25,s*0.03,0.2,Math.PI-0.2);c.stroke();
             }
             // Dress
             c.fillStyle='#3498db';
-            c.beginPath();c.moveTo(x-s*0.15,y+s*0.05);c.lineTo(x+s*0.15,y+s*0.05);
-            c.lineTo(x+s*0.2,y+s*0.35);c.lineTo(x-s*0.2,y+s*0.35);c.closePath();c.fill();
+            c.beginPath();c.moveTo(px-s*0.15,py+s*0.05);c.lineTo(px+s*0.15,py+s*0.05);
+            c.lineTo(px+s*0.2,py+s*0.35);c.lineTo(px-s*0.2,py+s*0.35);c.closePath();c.fill();
             // Legs
             c.fillStyle='#fdbcb4';
-            c.fillRect(x-s*0.1,y+s*0.3,s*0.06,s*0.12);
-            c.fillRect(x+s*0.04,y+s*0.3,s*0.06,s*0.12);
+            c.fillRect(px-s*0.1,py+s*0.3,s*0.06,s*0.12);
+            c.fillRect(px+s*0.04,py+s*0.3,s*0.06,s*0.12);
             // Shoes
             c.fillStyle='#2d3436';
-            c.fillRect(x-s*0.11,y+s*0.4,s*0.08,s*0.03);
-            c.fillRect(x+s*0.03,y+s*0.4,s*0.08,s*0.03);
+            c.fillRect(px-s*0.11,py+s*0.4,s*0.08,s*0.03);
+            c.fillRect(px+s*0.03,py+s*0.4,s*0.08,s*0.03);
         }
 
         function drawBasket(c,x,y,s){
@@ -508,16 +549,18 @@
             c.beginPath();c.ellipse(x,y-s*0.02,s*0.1,s*0.04,0,0,Math.PI*2);c.fill();
         }
 
-        function drawGrandma(c,x,y,s,inBed){
+        function drawGrandma(c,x,y,s,inBed,t){
+            t=t||0;
             if(inBed){
                 // Bed
                 c.fillStyle='#8B4513';
                 c.fillRect(x-s*0.4,y+s*0.05,s*0.8,s*0.08);
                 c.fillRect(x-s*0.4,y-s*0.15,s*0.06,s*0.28);
                 c.fillRect(x+s*0.34,y-s*0.15,s*0.06,s*0.28);
-                // Blanket
+                // Blanket - slight breathing movement
+                const breathe=Math.sin(t*2.5)*s*0.008;
                 c.fillStyle='#e84393';
-                c.fillRect(x-s*0.35,y-s*0.1,s*0.7,s*0.16);
+                c.fillRect(x-s*0.35,y-s*0.1-breathe,s*0.7,s*0.16+breathe);
                 // Pillow
                 c.fillStyle='white';
                 c.beginPath();c.ellipse(x-s*0.2,y-s*0.12,s*0.12,s*0.06,0,0,Math.PI*2);c.fill();
@@ -548,14 +591,17 @@
             }
         }
 
-        function drawWolfDisguised(c,x,y,s){
+        function drawWolfDisguised(c,x,y,s,t){
+            t=t||0;
             // In bed like grandma but wolf features
             c.fillStyle='#8B4513';
             c.fillRect(x-s*0.4,y+s*0.05,s*0.8,s*0.08);
             c.fillRect(x-s*0.4,y-s*0.15,s*0.06,s*0.28);
             c.fillRect(x+s*0.34,y-s*0.15,s*0.06,s*0.28);
+            // Blanket - slight breathing
+            const breathe=Math.sin(t*2.5)*s*0.008;
             c.fillStyle='#e84393';
-            c.fillRect(x-s*0.35,y-s*0.1,s*0.7,s*0.16);
+            c.fillRect(x-s*0.35,y-s*0.1-breathe,s*0.7,s*0.16+breathe);
             c.fillStyle='white';
             c.beginPath();c.ellipse(x-s*0.2,y-s*0.12,s*0.12,s*0.06,0,0,Math.PI*2);c.fill();
             // Wolf head with bonnet
@@ -566,41 +612,50 @@
             // Bonnet
             c.fillStyle='#dfe6e9';
             c.beginPath();c.arc(x-s*0.15,y-s*0.28,s*0.1,Math.PI,0);c.fill();
-            // Big eyes
+            // Big eyes - dart left and right
+            const eyeDart=Math.sin(t*3)*s*0.02;
             c.fillStyle='#ffd93d';
             c.beginPath();c.ellipse(x-s*0.2,y-s*0.22,s*0.03,s*0.035,0,0,Math.PI*2);c.fill();
             c.beginPath();c.ellipse(x-s*0.1,y-s*0.22,s*0.03,s*0.035,0,0,Math.PI*2);c.fill();
             c.fillStyle='#2d3436';
-            c.beginPath();c.arc(x-s*0.19,y-s*0.22,s*0.015,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x-s*0.09,y-s*0.22,s*0.015,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x-s*0.19+eyeDart,y-s*0.22,s*0.015,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x-s*0.09+eyeDart,y-s*0.22,s*0.015,0,Math.PI*2);c.fill();
             // Glasses
             c.strokeStyle='#636e72';c.lineWidth=1.5;
             c.beginPath();c.arc(x-s*0.2,y-s*0.22,s*0.04,0,Math.PI*2);c.stroke();
             c.beginPath();c.arc(x-s*0.1,y-s*0.22,s*0.04,0,Math.PI*2);c.stroke();
         }
 
-        function drawHunter(c,x,y,s){
+        function drawHunter(c,x,y,s,t){
+            t=t||0;
+            // Slight breathing
+            const breath=Math.sin(t*2.5)*s*0.005;
             c.fillStyle='#27ae60';
-            c.beginPath();c.moveTo(x-s*0.12,y-s*0.05);c.lineTo(x+s*0.12,y-s*0.05);
+            c.beginPath();c.moveTo(x-s*0.12,y-s*0.05+breath);c.lineTo(x+s*0.12,y-s*0.05+breath);
             c.lineTo(x+s*0.15,y+s*0.3);c.lineTo(x-s*0.15,y+s*0.3);c.closePath();c.fill();
             c.fillStyle='#fdbcb4';
-            c.beginPath();c.arc(x,y-s*0.15,s*0.12,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x,y-s*0.15+breath,s*0.12,0,Math.PI*2);c.fill();
             // Hat
             c.fillStyle='#27ae60';
-            c.beginPath();c.arc(x,y-s*0.22,s*0.1,Math.PI,0);c.fill();
-            c.fillRect(x-s*0.15,y-s*0.22,s*0.3,s*0.03);
+            c.beginPath();c.arc(x,y-s*0.22+breath,s*0.1,Math.PI,0);c.fill();
+            c.fillRect(x-s*0.15,y-s*0.22+breath,s*0.3,s*0.03);
             // Beard
             c.fillStyle='#8B4513';
-            c.beginPath();c.arc(x,y-s*0.08,s*0.08,0,Math.PI);c.fill();
+            c.beginPath();c.arc(x,y-s*0.08+breath,s*0.08,0,Math.PI);c.fill();
             // Eyes
             c.fillStyle='#2d3436';
-            c.beginPath();c.arc(x-s*0.04,y-s*0.17,s*0.02,0,Math.PI*2);c.fill();
-            c.beginPath();c.arc(x+s*0.04,y-s*0.17,s*0.02,0,Math.PI*2);c.fill();
-            // Axe
+            c.beginPath();c.arc(x-s*0.04,y-s*0.17+breath,s*0.02,0,Math.PI*2);c.fill();
+            c.beginPath();c.arc(x+s*0.04,y-s*0.17+breath,s*0.02,0,Math.PI*2);c.fill();
+            // Axe - swings slightly
+            c.save();
+            c.translate(x+s*0.2,y+s*0.25);
+            c.rotate(Math.sin(t*2)*0.15);
+            c.translate(-(x+s*0.2),-(y+s*0.25));
             c.strokeStyle='#8B4513';c.lineWidth=3;
             c.beginPath();c.moveTo(x+s*0.2,y-s*0.1);c.lineTo(x+s*0.2,y+s*0.25);c.stroke();
             c.fillStyle='#b2bec3';
             c.beginPath();c.moveTo(x+s*0.15,y-s*0.1);c.lineTo(x+s*0.28,y-s*0.05);c.lineTo(x+s*0.15,y);c.closePath();c.fill();
+            c.restore();
         }
 
         function drawCottage(c,x,y,s){
@@ -640,127 +695,128 @@
         // ===== RED RIDING HOOD STORY =====
         const capuchinho = {
             title: 'O Capuchinho Vermelho',
-            cover: function(c,w,h){
+            cover: function(c,w,h,t){
+                t=t||0;
                 drawSky(c,w,h,'#87ceeb','#c8e6c9');
                 drawGrass(c,w,h,'#55a630');
-                drawSun(c,w,h,0.85,0.12);
-                drawTree(c,w*0.1,h*0.4,w*0.18);
-                drawTree(c,w*0.9,h*0.42,w*0.15);
-                drawGirl(c,w*0.5,h*0.5,w*0.35,'happy');
+                drawSun(c,w,h,0.85,0.12,null,t);
+                drawTree(c,w*0.1,h*0.4,w*0.18,t);
+                drawTree(c,w*0.9,h*0.42,w*0.15,t);
+                drawGirl(c,w*0.5,h*0.5,w*0.35,'happy',t);
                 drawBasket(c,w*0.65,h*0.6,w*0.3);
             },
             pages: [
                 {
                     text: 'Era uma vez uma menina que usava sempre um capuz vermelho. Todos a chamavam de Capuchinho Vermelho.',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#c8e6c9');
                         drawGrass(c,w,h,'#55a630');
-                        drawSun(c,w,h,0.85,0.1);
-                        drawCloud(c,w*0.3,h*0.1,w*0.04);
-                        drawTree(c,w*0.08,h*0.42,w*0.14);
-                        drawTree(c,w*0.92,h*0.44,w*0.12);
-                        drawGirl(c,w*0.5,h*0.5,w*0.35,'happy');
+                        drawSun(c,w,h,0.85,0.1,null,t);
+                        drawCloud(c,w*0.3,h*0.1,w*0.04,t);
+                        drawTree(c,w*0.08,h*0.42,w*0.14,t);
+                        drawTree(c,w*0.92,h*0.44,w*0.12,t);
+                        drawGirl(c,w*0.5,h*0.5,w*0.35,'happy',t);
                     }
                 },
                 {
                     text: 'Um dia, a mãe disse: "Leva este cesto de comida à avozinha, que está doente. Mas não saias do caminho!"',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#e8f5e9');
                         drawGrass(c,w,h,'#55a630');
                         // House
                         drawCottage(c,w*0.25,h*0.42,w*0.3);
-                        drawGirl(c,w*0.55,h*0.52,w*0.28,'happy');
+                        drawGirl(c,w*0.55,h*0.52,w*0.28,'happy',t);
                         drawBasket(c,w*0.68,h*0.62,w*0.25);
                     }
                 },
                 {
                     text: 'O Capuchinho Vermelho entrou na floresta. O caminho era longo e cheio de árvores grandes.',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawForestBg(c,w,h);
                         drawForestPath(c,w,h);
-                        drawGirl(c,w*0.45,h*0.52,w*0.25,'happy');
+                        drawGirl(c,w*0.45,h*0.52,w*0.25,'happy',t);
                         drawBasket(c,w*0.58,h*0.62,w*0.2);
                     }
                 },
                 {
                     text: 'No caminho, encontrou o lobo mau! "Onde vais, menina?", perguntou o lobo com um sorriso malandro.',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawForestBg(c,w,h);
                         drawForestPath(c,w,h);
-                        drawWolf(c,w*0.25,h*0.48,w*0.28,'');
-                        drawGirl(c,w*0.7,h*0.52,w*0.25,'scared');
+                        drawWolf(c,w*0.25,h*0.48,w*0.28,'',t);
+                        drawGirl(c,w*0.7,h*0.52,w*0.25,'scared',t);
                         drawBasket(c,w*0.82,h*0.62,w*0.2);
                     }
                 },
                 {
                     text: '"Vou levar comida à minha avozinha", disse o Capuchinho. O lobo teve uma ideia muito má...',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawForestBg(c,w,h);
-                        drawWolf(c,w*0.3,h*0.48,w*0.3,'');
-                        drawGirl(c,w*0.7,h*0.52,w*0.25,'happy');
+                        drawWolf(c,w*0.3,h*0.48,w*0.3,'',t);
+                        drawGirl(c,w*0.7,h*0.52,w*0.25,'happy',t);
                         // Thought bubble from wolf
                         c.fillStyle='rgba(255,255,255,0.7)';
-                        c.beginPath();c.arc(w*0.15,h*0.2,w*0.06,0,Math.PI*2);c.fill();
+                        c.beginPath();c.arc(w*0.15,h*0.2+Math.sin(t*2)*3,w*0.06,0,Math.PI*2);c.fill();
                         c.beginPath();c.arc(w*0.2,h*0.3,w*0.02,0,Math.PI*2);c.fill();
                         c.beginPath();c.arc(w*0.23,h*0.35,w*0.012,0,Math.PI*2);c.fill();
                     }
                 },
                 {
                     text: 'O lobo correu pelo atalho e chegou primeiro à casa da avozinha. Engoliu a avozinha e vestiu a roupa dela!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#c8e6c9');
                         drawGrass(c,w,h,'#4a8c3f');
                         drawCottage(c,w*0.6,h*0.4,w*0.35);
-                        drawWolf(c,w*0.25,h*0.52,w*0.3,'');
+                        drawWolf(c,w*0.25,h*0.52,w*0.3,'',t);
                     }
                 },
                 {
                     text: 'O Capuchinho chegou e entrou. "Avozinha, que olhos tão grandes tens!" "É para te ver melhor!"',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         // Interior
                         c.fillStyle='#deb887';c.fillRect(0,0,w,h);
                         c.fillStyle='#c4a265';c.fillRect(0,h*0.7,w,h*0.3);
                         // Curtains
                         c.fillStyle='#e84393';
                         c.fillRect(0,0,w*0.08,h*0.5);c.fillRect(w*0.92,0,w*0.08,h*0.5);
-                        drawWolfDisguised(c,w*0.6,h*0.45,w*0.5);
-                        drawGirl(c,w*0.2,h*0.52,w*0.25,'scared');
+                        drawWolfDisguised(c,w*0.6,h*0.45,w*0.5,t);
+                        drawGirl(c,w*0.2,h*0.52,w*0.25,'scared',t);
                         drawBasket(c,w*0.1,h*0.65,w*0.2);
                     }
                 },
                 {
                     text: '"Avozinha, que boca tão grande tens!" "É para te COMER!" E o lobo saltou da cama!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         c.fillStyle='#deb887';c.fillRect(0,0,w,h);
                         c.fillStyle='#c4a265';c.fillRect(0,h*0.7,w,h*0.3);
-                        drawWolf(c,w*0.55,h*0.45,w*0.35,'blow');
-                        drawGirl(c,w*0.2,h*0.55,w*0.22,'scared');
+                        drawWolf(c,w*0.55,h*0.45,w*0.35,'blow',t);
+                        drawGirl(c,w*0.2,h*0.55,w*0.22,'scared',t);
                     }
                 },
                 {
                     text: 'Um caçador corajoso ouviu os gritos e entrou na casa. Salvou o Capuchinho e a avozinha!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#c8e6c9');
                         drawGrass(c,w,h,'#55a630');
                         drawCottage(c,w*0.5,h*0.4,w*0.35);
-                        drawHunter(c,w*0.2,h*0.55,w*0.25);
-                        drawGirl(c,w*0.75,h*0.55,w*0.2,'happy');
+                        drawHunter(c,w*0.2,h*0.55,w*0.25,t);
+                        drawGirl(c,w*0.75,h*0.55,w*0.2,'happy',t);
                     }
                 },
                 {
                     text: 'O lobo fugiu para nunca mais voltar. O Capuchinho prometeu nunca mais sair do caminho. E viveram felizes para sempre!',
-                    draw(c,w,h){
+                    draw(c,w,h,t){
                         drawSky(c,w,h,'#87ceeb','#e8f5e9');
                         drawGrass(c,w,h,'#55a630');
-                        drawSun(c,w,h,0.5,0.12,w*0.07);
-                        drawCloud(c,w*0.2,h*0.1,w*0.04);
-                        drawCloud(c,w*0.75,h*0.13,w*0.035);
+                        drawSun(c,w,h,0.5,0.12,w*0.07,t);
+                        drawCloud(c,w*0.2,h*0.1,w*0.04,t);
+                        drawCloud(c,w*0.75,h*0.13,w*0.035,t);
                         drawCottage(c,w*0.5,h*0.4,w*0.3);
-                        drawGirl(c,w*0.25,h*0.55,w*0.2,'happy');
-                        drawGrandma(c,w*0.5,h*0.58,w*0.2,false);
-                        drawHunter(c,w*0.75,h*0.55,w*0.2);
+                        drawGirl(c,w*0.25,h*0.55,w*0.2,'happy',t);
+                        drawGrandma(c,w*0.5,h*0.58,w*0.2,false,t);
+                        drawHunter(c,w*0.75,h*0.55,w*0.2,t);
                         c.fillStyle='#ff6b6b';c.font=(w*0.04)+'px serif';
-                        c.fillText('\u2665',w*0.35,h*0.3);c.fillText('\u2665',w*0.65,h*0.28);c.fillText('\u2665',w*0.5,h*0.25);
+                        c.fillText('\u2665',w*0.35,h*0.3+Math.sin(t*2)*5);c.fillText('\u2665',w*0.65,h*0.28+Math.sin(t*2+1)*5);c.fillText('\u2665',w*0.5,h*0.25+Math.sin(t*2+2)*5);
                     }
                 },
             ]
@@ -811,31 +867,35 @@
             window.speechSynthesis.cancel();
         }
 
+        let animFrame=null;
+        let animTime=0;
+
         function renderPage(){
             if(!currentStory)return;
+            if(animFrame) cancelAnimationFrame(animFrame);
             const page=currentStory.pages[currentPage];
             const total=currentStory.pages.length;
 
-            // Resize canvas
             const area=document.querySelector('.scene-area');
             canvas.width=area.clientWidth*2;
             canvas.height=area.clientHeight*2;
-            c.setTransform(2,0,0,2,0,0);
             const w=area.clientWidth;
             const h=area.clientHeight;
+            animTime=0;
 
-            // Draw scene
-            page.draw(c,w,h);
+            function animate(){
+                animTime+=0.016;
+                c.setTransform(2,0,0,2,0,0);
+                c.clearRect(0,0,w,h);
+                page.draw(c,w,h,animTime);
+                animFrame=requestAnimationFrame(animate);
+            }
+            animate();
 
-            // Text
             document.getElementById('storyText').textContent=page.text;
             document.getElementById('pageIndicator').textContent=(currentPage+1)+' / '+total;
-
-            // Buttons
             document.getElementById('btnPrev').style.visibility=currentPage>0?'visible':'hidden';
             document.getElementById('btnNext').textContent=currentPage<total-1?'Seguinte ▶':'Fim ★';
-
-            // Auto-read
             setTimeout(()=>speak(page.text),500);
         }
 
