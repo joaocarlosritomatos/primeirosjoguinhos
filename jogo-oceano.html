@@ -1247,12 +1247,139 @@
             });
         }
 
+        // ===== SUBMARINE =====
+        let sub = {
+            x: -120,
+            y: 120 + Math.random()*(H*0.4),
+            dir: 1,
+            speed: 0.4 + Math.random()*0.3,
+            wobble: 0,
+            bubbleTimer: 0,
+            subBubbles: [],
+            propAngle: 0,
+        };
+
+        function drawSubmarine(){
+            sub.wobble += 0.02;
+            sub.propAngle += 0.3;
+            const yOff = Math.sin(sub.wobble)*4;
+
+            // Move
+            sub.x += sub.speed * sub.dir;
+
+            // When off-screen, reappear from the other side at new depth
+            if(sub.dir===1 && sub.x > W+140){
+                sub.dir = -1;
+                sub.y = 100 + Math.random()*(H*0.5);
+                sub.speed = 0.4 + Math.random()*0.3;
+            } else if(sub.dir===-1 && sub.x < -140){
+                sub.dir = 1;
+                sub.y = 100 + Math.random()*(H*0.5);
+                sub.speed = 0.4 + Math.random()*0.3;
+            }
+
+            // Exhaust bubbles
+            sub.bubbleTimer++;
+            if(sub.bubbleTimer>15){
+                sub.bubbleTimer=0;
+                const bx = sub.dir===1 ? sub.x-30 : sub.x+30;
+                sub.subBubbles.push({x:bx, y:sub.y+yOff-2, r:2+Math.random()*3, life:60});
+            }
+            for(let i=sub.subBubbles.length-1;i>=0;i--){
+                const b=sub.subBubbles[i];
+                b.y-=0.5; b.x+=(Math.random()-0.5)*0.5; b.life--;
+                if(b.life<=0){sub.subBubbles.splice(i,1);continue;}
+                c.beginPath();
+                c.arc(b.x,b.y,b.r,0,Math.PI*2);
+                c.fillStyle='rgba(255,255,255,'+(b.life/60*0.4)+')';
+                c.fill();
+            }
+
+            c.save();
+            c.translate(sub.x, sub.y + yOff);
+            if(sub.dir===-1) c.scale(-1,1);
+
+            // Main hull (yellow)
+            c.beginPath();
+            c.ellipse(0,0,38,16,0,0,Math.PI*2);
+            c.fillStyle='#f1c40f';
+            c.fill();
+            c.strokeStyle='#d4a20a';
+            c.lineWidth=2;
+            c.stroke();
+
+            // Darker stripe
+            c.beginPath();
+            c.ellipse(0,2,34,6,0,0,Math.PI);
+            c.fillStyle='#e6a800';
+            c.fill();
+
+            // Tower/conning tower
+            c.beginPath();
+            c.roundRect(-8,-24,16,12,3);
+            c.fillStyle='#f1c40f';
+            c.fill();
+            c.strokeStyle='#d4a20a';
+            c.lineWidth=1.5;
+            c.stroke();
+
+            // Periscope
+            c.beginPath();
+            c.moveTo(2,-24);
+            c.lineTo(2,-32);
+            c.lineTo(8,-32);
+            c.strokeStyle='#7f8c8d';
+            c.lineWidth=2;
+            c.stroke();
+
+            // Window (porthole)
+            c.beginPath();
+            c.arc(12,0,5,0,Math.PI*2);
+            c.fillStyle='#85c1e9';
+            c.fill();
+            c.strokeStyle='#d4a20a';
+            c.lineWidth=1.5;
+            c.stroke();
+
+            // Small window
+            c.beginPath();
+            c.arc(-5,0,3.5,0,Math.PI*2);
+            c.fillStyle='#aed6f1';
+            c.fill();
+            c.strokeStyle='#d4a20a';
+            c.lineWidth=1;
+            c.stroke();
+
+            // Propeller at the back
+            c.save();
+            c.translate(-38,0);
+            c.rotate(sub.propAngle);
+            c.beginPath();
+            c.ellipse(0,0,2,8,0,0,Math.PI*2);
+            c.fillStyle='#7f8c8d';
+            c.fill();
+            c.beginPath();
+            c.ellipse(0,0,8,2,0,0,Math.PI*2);
+            c.fillStyle='#7f8c8d';
+            c.fill();
+            c.restore();
+
+            // Front nose highlight
+            c.beginPath();
+            c.ellipse(28,-4,8,4,0.3,Math.PI,0);
+            c.fillStyle='rgba(255,255,255,0.2)';
+            c.fill();
+
+            c.restore();
+        }
+
         // ===== GAME LOOP =====
         function frame(){
             c.clearRect(0,0,W,H);
             drawBackground();
             drawLightRays();
             drawBubbles();
+            drawSubmarine();
             drawPlants();
             drawAnimals();
             drawTrash();
