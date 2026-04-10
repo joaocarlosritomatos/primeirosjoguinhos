@@ -234,14 +234,20 @@
             trash.push({
                 ...type,
                 x: 30 + Math.random()*(W-60),
-                y: 80 + Math.random()*(H-160),
+                y: -30 - Math.random()*60,
                 r: 33 + Math.random()*15,
                 bobble: Math.random()*Math.PI*2,
                 bobbleSpeed: 0.01 + Math.random()*0.015,
+                sinkSpeed: 0.3 + Math.random()*0.4,
+                wobbleAmp: 15 + Math.random()*20,
+                wobbleSpeed: 0.008 + Math.random()*0.008,
+                startX: 0,
                 rot: (Math.random()-0.5)*0.5,
                 opacity: 1,
                 removing: false,
+                sunk: false,
             });
+            trash[trash.length-1].startX = trash[trash.length-1].x;
         }
 
         function spawnPlants(){
@@ -297,7 +303,11 @@
             document.getElementById('levelComplete').classList.remove('show');
 
             const trashCount = 4 + level * 2;
-            for(let i=0;i<trashCount;i++) spawnTrash();
+            for(let i=0;i<trashCount;i++){
+                spawnTrash();
+                // Stagger: each piece starts higher so they fall one by one
+                trash[trash.length-1].y = -30 - i * 80 - Math.random()*40;
+            }
 
             const animalCount = 3 + level;
             for(let i=0;i<animalCount;i++) spawnAnimal();
@@ -1195,7 +1205,18 @@
         function drawTrash(){
             trash.forEach(t=>{
                 t.bobble+=t.bobbleSpeed;
-                const yOff=Math.sin(t.bobble)*3;
+
+                // Sink slowly until reaching the sand
+                if(!t.removing && !t.sunk){
+                    t.y += t.sinkSpeed;
+                    t.x = t.startX + Math.sin(t.bobble * t.wobbleSpeed * 60) * t.wobbleAmp;
+                    if(t.y >= H - 60){
+                        t.y = H - 60;
+                        t.sunk = true;
+                    }
+                }
+
+                const yOff = t.sunk ? Math.sin(t.bobble)*2 : Math.sin(t.bobble)*3;
 
                 if(t.removing){
                     t.opacity-=0.08;
