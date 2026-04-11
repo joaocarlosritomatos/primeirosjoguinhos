@@ -803,10 +803,7 @@
             speechTimer: 0,
         };
 
-        // Stitch real audio
-        const stitchAudio = new Audio('stitch-hi.mp3');
-
-        // Stitch voice - speech synthesis for Angel
+        // Stitch voice - speech synthesis
         function stitchSay(text){
             if('speechSynthesis' in window){
                 speechSynthesis.cancel();
@@ -817,11 +814,6 @@
                 u.volume = 1;
                 speechSynthesis.speak(u);
             }
-        }
-
-        function playStitchAudio(){
-            stitchAudio.currentTime = 0;
-            stitchAudio.play().catch(()=>{});
         }
 
         let hoverCooldown = false;
@@ -853,7 +845,7 @@
                     hoverCooldown = true;
                     stitch.speechTimer = 150;
                     stitch.speechText = 'Olá primo!';
-                    playStitchAudio();
+                    stitchSay('Olá primo!');
                     setTimeout(()=>{ hoverCooldown = false; }, 5000);
                 }
             } else {
