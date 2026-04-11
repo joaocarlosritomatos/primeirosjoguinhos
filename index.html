@@ -651,6 +651,247 @@
         </div>
     </div>
 
+    <!-- Stitch Canvas -->
+    <canvas id="stitchCanvas" style="position:fixed;bottom:20px;left:0;width:100%;height:120px;z-index:5;pointer-events:none;"></canvas>
+
+    <script>
+    (function(){
+        const sc = document.getElementById('stitchCanvas');
+        const ctx = sc.getContext('2d');
+        function resizeStitch(){ sc.width=window.innerWidth; sc.height=120; }
+        resizeStitch();
+        window.addEventListener('resize', resizeStitch);
+
+        const stitch = {
+            x: -60,
+            dir: 1,
+            speed: 1.2,
+            walk: 0,
+            blink: 0,
+            blinkTimer: 150,
+            earWiggle: 0,
+        };
+
+        function drawStitch(){
+            ctx.clearRect(0,0,sc.width,sc.height);
+            stitch.walk += 0.07;
+            stitch.earWiggle += 0.05;
+            stitch.blinkTimer--;
+            if(stitch.blinkTimer<=0){ stitch.blink=8; stitch.blinkTimer=120+Math.floor(Math.random()*200); }
+            if(stitch.blink>0) stitch.blink--;
+
+            stitch.x += stitch.speed * stitch.dir;
+            if(stitch.dir===1 && stitch.x > sc.width+60){
+                stitch.dir=-1; stitch.speed=0.8+Math.random()*0.6;
+            } else if(stitch.dir===-1 && stitch.x < -60){
+                stitch.dir=1; stitch.speed=0.8+Math.random()*0.6;
+            }
+
+            const bounce = Math.abs(Math.sin(stitch.walk*2))*4;
+            const legSwing = Math.sin(stitch.walk*2)*5;
+            const armSwing = Math.sin(stitch.walk*1.5)*0.3;
+            const blinking = stitch.blink > 0;
+
+            ctx.save();
+            ctx.translate(stitch.x, 70 - bounce);
+            if(stitch.dir===-1) ctx.scale(-1,1);
+
+            // === LEGS ===
+            // Left leg
+            ctx.save();
+            ctx.translate(-8, 18);
+            ctx.rotate(legSwing*0.06);
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,6,5,8,0,0,Math.PI*2);
+            ctx.fill();
+            // Foot
+            ctx.fillStyle='#1e3f7a';
+            ctx.beginPath();
+            ctx.ellipse(2,14,7,4,0.2,0,Math.PI*2);
+            ctx.fill();
+            // Claws
+            ctx.fillStyle='#ddd';
+            for(let i=-1;i<=1;i++){
+                ctx.beginPath();
+                ctx.ellipse(6+i*3,16,1.5,2,0,0,Math.PI*2);
+                ctx.fill();
+            }
+            ctx.restore();
+            // Right leg
+            ctx.save();
+            ctx.translate(8, 18);
+            ctx.rotate(-legSwing*0.06);
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,6,5,8,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#1e3f7a';
+            ctx.beginPath();
+            ctx.ellipse(2,14,7,4,0.2,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#ddd';
+            for(let i=-1;i<=1;i++){
+                ctx.beginPath();
+                ctx.ellipse(6+i*3,16,1.5,2,0,0,Math.PI*2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // === BODY ===
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,8,14,14,0,0,Math.PI*2);
+            ctx.fill();
+
+            // Belly patch (lighter blue)
+            ctx.fillStyle='#6cb4ee';
+            ctx.beginPath();
+            ctx.ellipse(0,12,8,8,0,0,Math.PI*2);
+            ctx.fill();
+
+            // === ARMS ===
+            // Left arm
+            ctx.save();
+            ctx.translate(-14, 2);
+            ctx.rotate(-0.4+armSwing);
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,8,4,10,0.1,0,Math.PI*2);
+            ctx.fill();
+            // Hand/claws
+            ctx.fillStyle='#1e3f7a';
+            ctx.beginPath();
+            ctx.ellipse(-1,18,5,3,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+            // Right arm
+            ctx.save();
+            ctx.translate(14, 2);
+            ctx.rotate(0.4-armSwing);
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,8,4,10,-0.1,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#1e3f7a';
+            ctx.beginPath();
+            ctx.ellipse(1,18,5,3,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+
+            // === HEAD ===
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,-10,16,14,0,0,Math.PI*2);
+            ctx.fill();
+
+            // === EARS (big floppy) ===
+            const earW = Math.sin(stitch.earWiggle)*0.08;
+            // Left ear
+            ctx.save();
+            ctx.translate(-12,-18);
+            ctx.rotate(-0.8+earW);
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,-14,7,18,0,0,Math.PI*2);
+            ctx.fill();
+            // Inner ear
+            ctx.fillStyle='#d95ba3';
+            ctx.beginPath();
+            ctx.ellipse(0,-14,4,13,0,0,Math.PI*2);
+            ctx.fill();
+            // Ear notch
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,-26,4,3,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+            // Right ear
+            ctx.save();
+            ctx.translate(12,-18);
+            ctx.rotate(0.8-earW);
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,-14,7,18,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#d95ba3';
+            ctx.beginPath();
+            ctx.ellipse(0,-14,4,13,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle='#2954a3';
+            ctx.beginPath();
+            ctx.ellipse(0,-26,4,3,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+
+            // === FACE ===
+            // Eye area (lighter)
+            ctx.fillStyle='#6cb4ee';
+            ctx.beginPath();
+            ctx.ellipse(0,-12,12,8,0,0,Math.PI*2);
+            ctx.fill();
+
+            // Eyes
+            if(!blinking){
+                // Left eye
+                ctx.fillStyle='#111';
+                ctx.beginPath();
+                ctx.ellipse(-5,-12,3.5,4.5,0,0,Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle='#fff';
+                ctx.beginPath();
+                ctx.arc(-4,-13.5,1.5,0,Math.PI*2);
+                ctx.fill();
+                // Right eye
+                ctx.fillStyle='#111';
+                ctx.beginPath();
+                ctx.ellipse(5,-12,3.5,4.5,0,0,Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle='#fff';
+                ctx.beginPath();
+                ctx.arc(6,-13.5,1.5,0,Math.PI*2);
+                ctx.fill();
+            } else {
+                ctx.strokeStyle='#111';
+                ctx.lineWidth=2;
+                ctx.beginPath();
+                ctx.moveTo(-8,-12); ctx.lineTo(-2,-12);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(2,-12); ctx.lineTo(8,-12);
+                ctx.stroke();
+            }
+
+            // Nose
+            ctx.fillStyle='#1e3f7a';
+            ctx.beginPath();
+            ctx.ellipse(0,-8,3,2,0,0,Math.PI*2);
+            ctx.fill();
+
+            // Mouth - big smile
+            ctx.beginPath();
+            ctx.arc(0,-5,7,0.15,Math.PI-0.15);
+            ctx.strokeStyle='#1e3f7a';
+            ctx.lineWidth=1.8;
+            ctx.stroke();
+
+            // Dark markings on back of head
+            ctx.strokeStyle='#1a3d78';
+            ctx.lineWidth=2;
+            // Center stripe
+            ctx.beginPath();
+            ctx.moveTo(0,-24);
+            ctx.quadraticCurveTo(0,-18,0,-10);
+            ctx.stroke();
+
+            ctx.restore();
+            requestAnimationFrame(drawStitch);
+        }
+
+        drawStitch();
+    })();
+    </script>
+
     <script>
         // Worm animation - each spot has its own worm hidden by overflow
         const spots = document.querySelectorAll('.worm-spot');
