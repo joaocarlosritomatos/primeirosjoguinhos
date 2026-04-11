@@ -307,6 +307,27 @@
             font-size: 12px;
             margin-bottom: 60px;
         }
+
+        .music-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 20;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.85);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .music-btn:hover { transform: scale(1.1); }
+        .music-btn.off { opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -595,6 +616,115 @@
     });
     </script>
 
+    <button class="music-btn" id="musicBtn" title="Música">🔇</button>
+
+    <script>
+    // Calm children's lullaby using Web Audio API
+    (function(){
+        let audioCtx = null;
+        let playing = false;
+        let nextNoteTime = 0;
+        let noteIndex = 0;
+        let schedulerTimer = null;
+        let gainNode = null;
+        let masterGain = null;
+
+        // Gentle pentatonic melody notes (frequencies in Hz)
+        // C major pentatonic scale across octaves for a calm lullaby
+        const C4=261.63,D4=293.66,E4=329.63,G4=392,A4=440;
+        const C5=523.25,D5=587.33,E5=659.25,G5=784,A5=880;
+
+        // Calm melody pattern - Twinkle Twinkle / lullaby feel
+        const melody = [
+            [C4,0.6],[C4,0.6],[G4,0.6],[G4,0.6],[A4,0.6],[A4,0.6],[G4,1.0],
+            [E4,0.6],[E4,0.6],[D4,0.6],[D4,0.6],[C4,1.2],[0,0.4],
+            [G4,0.6],[G4,0.6],[E4,0.6],[E4,0.6],[D4,0.6],[D4,0.6],[C4,1.0],
+            [G4,0.6],[G4,0.6],[E4,0.6],[E4,0.6],[D4,0.6],[D4,0.6],[C4,1.0],[0,0.6],
+            [C4,0.6],[E4,0.6],[G4,0.8],[E4,0.6],[C5,0.8],[A4,0.6],[G4,1.0],
+            [E4,0.6],[D4,0.6],[C4,0.8],[D4,0.6],[E4,0.8],[C4,1.2],[0,0.6],
+        ];
+
+        function initAudio(){
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.12;
+            masterGain.connect(audioCtx.destination);
+        }
+
+        function playNote(freq, duration, time){
+            if(freq === 0) return; // rest
+
+            // Soft sine wave
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+
+            const g = audioCtx.createGain();
+            g.gain.setValueAtTime(0, time);
+            g.gain.linearRampToValueAtTime(0.5, time + 0.08);
+            g.gain.setValueAtTime(0.5, time + duration * 0.6);
+            g.gain.linearRampToValueAtTime(0, time + duration * 0.95);
+
+            osc.connect(g);
+            g.connect(masterGain);
+
+            osc.start(time);
+            osc.stop(time + duration);
+
+            // Soft harmony (octave above, very quiet)
+            const osc2 = audioCtx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.value = freq * 2;
+
+            const g2 = audioCtx.createGain();
+            g2.gain.setValueAtTime(0, time);
+            g2.gain.linearRampToValueAtTime(0.1, time + 0.1);
+            g2.gain.setValueAtTime(0.1, time + duration * 0.5);
+            g2.gain.linearRampToValueAtTime(0, time + duration * 0.9);
+
+            osc2.connect(g2);
+            g2.connect(masterGain);
+
+            osc2.start(time);
+            osc2.stop(time + duration);
+        }
+
+        function scheduler(){
+            while(nextNoteTime < audioCtx.currentTime + 0.3){
+                const [freq, dur] = melody[noteIndex % melody.length];
+                playNote(freq, dur * 0.9, nextNoteTime);
+                nextNoteTime += dur;
+                noteIndex++;
+            }
+            schedulerTimer = setTimeout(scheduler, 100);
+        }
+
+        function startMusic(){
+            if(!audioCtx) initAudio();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            nextNoteTime = audioCtx.currentTime;
+            noteIndex = 0;
+            scheduler();
+            playing = true;
+            document.getElementById('musicBtn').textContent = '🔊';
+            document.getElementById('musicBtn').classList.remove('off');
+        }
+
+        function stopMusic(){
+            if(schedulerTimer) clearTimeout(schedulerTimer);
+            schedulerTimer = null;
+            playing = false;
+            document.getElementById('musicBtn').textContent = '🔇';
+            document.getElementById('musicBtn').classList.add('off');
+        }
+
+        document.getElementById('musicBtn').addEventListener('click', function(){
+            if(playing) stopMusic();
+            else startMusic();
+        });
+    })();
+    </script>
+
     <footer>
         Primeiros Joguinhos &copy; 2026
     </footer>
@@ -673,7 +803,10 @@
             speechTimer: 0,
         };
 
-        // Stitch voice - high pitch, fast rate to sound like Stitch
+        // Stitch real audio
+        const stitchAudio = new Audio('stitch-hi.mp3');
+
+        // Stitch voice - speech synthesis for Angel
         function stitchSay(text){
             if('speechSynthesis' in window){
                 speechSynthesis.cancel();
@@ -686,9 +819,14 @@
             }
         }
 
+        function playStitchAudio(){
+            stitchAudio.currentTime = 0;
+            stitchAudio.play().catch(()=>{});
+        }
+
         let hoverCooldown = false;
 
-        // Click/tap on Stitch to show speech bubble
+        // Click/tap on Stitch to show speech bubble + real audio
         sc.addEventListener('click', function(e){
             const rect = sc.getBoundingClientRect();
             const cx = (e.clientX - rect.left) * (sc.width / rect.width);
@@ -697,12 +835,12 @@
             const dy = cy - 70;
             if(dx*dx + dy*dy < 40*40){
                 stitch.speechTimer = 180;
-                stitch.speechText = 'Olá, sou o Stitch!';
-                stitchSay('Olá, sou o Stitch!');
+                stitch.speechText = 'Hi!';
+                playStitchAudio();
             }
         });
 
-        // Hover over Stitch says "olá primo"
+        // Hover over Stitch plays real audio
         sc.addEventListener('mousemove', function(e){
             const rect = sc.getBoundingClientRect();
             const cx = (e.clientX - rect.left) * (sc.width / rect.width);
@@ -714,8 +852,8 @@
                 if(!hoverCooldown && stitch.speechTimer <= 0){
                     hoverCooldown = true;
                     stitch.speechTimer = 150;
-                    stitch.speechText = 'Olá primo!';
-                    stitchSay('Olá primo!');
+                    stitch.speechText = 'Hi!';
+                    playStitchAudio();
                     setTimeout(()=>{ hoverCooldown = false; }, 5000);
                 }
             } else {
