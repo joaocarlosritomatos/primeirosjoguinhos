@@ -652,7 +652,7 @@
     </div>
 
     <!-- Stitch Canvas -->
-    <canvas id="stitchCanvas" style="position:fixed;bottom:20px;left:0;width:100%;height:120px;z-index:5;pointer-events:none;"></canvas>
+    <canvas id="stitchCanvas" style="position:fixed;bottom:20px;left:0;width:100%;height:120px;z-index:7;"></canvas>
 
     <script>
     (function(){
@@ -670,7 +670,20 @@
             blink: 0,
             blinkTimer: 150,
             earWiggle: 0,
+            speechTimer: 0,
         };
+
+        // Click/tap on Stitch to show speech bubble
+        sc.addEventListener('click', function(e){
+            const rect = sc.getBoundingClientRect();
+            const cx = (e.clientX - rect.left) * (sc.width / rect.width);
+            const cy = (e.clientY - rect.top) * (sc.height / rect.height);
+            const dx = cx - stitch.x;
+            const dy = cy - 70;
+            if(dx*dx + dy*dy < 40*40){
+                stitch.speechTimer = 180;
+            }
+        });
 
         function drawStitch(){
             ctx.clearRect(0,0,sc.width,sc.height);
@@ -885,6 +898,59 @@
             ctx.stroke();
 
             ctx.restore();
+
+            // Speech bubble
+            if(stitch.speechTimer > 0){
+                stitch.speechTimer--;
+                const alpha = stitch.speechTimer < 20 ? stitch.speechTimer/20 : 1;
+                const bx = stitch.x;
+                const by = 70 - bounce;
+                const bubbleY = by - 55;
+                const bubbleX = bx;
+                const text = 'Olá, sou o Stitch!';
+
+                ctx.save();
+                ctx.globalAlpha = alpha;
+
+                // Bubble
+                ctx.fillStyle = '#fff';
+                ctx.strokeStyle = '#2954a3';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                const bw = 110, bh = 32, br = 10;
+                ctx.roundRect(bubbleX - bw/2, bubbleY - bh/2, bw, bh, br);
+                ctx.fill();
+                ctx.stroke();
+
+                // Tail pointing down to Stitch
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.moveTo(bubbleX - 6, bubbleY + bh/2 - 2);
+                ctx.lineTo(bubbleX, bubbleY + bh/2 + 10);
+                ctx.lineTo(bubbleX + 6, bubbleY + bh/2 - 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(bubbleX - 6, bubbleY + bh/2 - 1);
+                ctx.lineTo(bubbleX, bubbleY + bh/2 + 10);
+                ctx.lineTo(bubbleX + 6, bubbleY + bh/2 - 1);
+                ctx.strokeStyle = '#2954a3';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                // Cover tail top with white to blend
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(bubbleX - 7, bubbleY + bh/2 - 4, 14, 5);
+
+                // Text
+                ctx.fillStyle = '#2954a3';
+                ctx.font = 'bold 14px "Segoe UI", Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, bubbleX, bubbleY);
+
+                ctx.restore();
+            }
+
             requestAnimationFrame(drawStitch);
         }
 
