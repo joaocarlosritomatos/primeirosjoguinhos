@@ -673,6 +673,21 @@
             speechTimer: 0,
         };
 
+        // Stitch voice - high pitch, fast rate to sound like Stitch
+        function stitchSay(text){
+            if('speechSynthesis' in window){
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'pt-PT';
+                u.pitch = 1.8;
+                u.rate = 1.3;
+                u.volume = 1;
+                speechSynthesis.speak(u);
+            }
+        }
+
+        let hoverCooldown = false;
+
         // Click/tap on Stitch to show speech bubble
         sc.addEventListener('click', function(e){
             const rect = sc.getBoundingClientRect();
@@ -682,6 +697,29 @@
             const dy = cy - 70;
             if(dx*dx + dy*dy < 40*40){
                 stitch.speechTimer = 180;
+                stitch.speechText = 'Olá, sou o Stitch!';
+                stitchSay('Olá, sou o Stitch!');
+            }
+        });
+
+        // Hover over Stitch says "olá primo"
+        sc.addEventListener('mousemove', function(e){
+            const rect = sc.getBoundingClientRect();
+            const cx = (e.clientX - rect.left) * (sc.width / rect.width);
+            const cy = (e.clientY - rect.top) * (sc.height / rect.height);
+            const dx = cx - stitch.x;
+            const dy = cy - 70;
+            if(dx*dx + dy*dy < 40*40){
+                sc.style.cursor = 'pointer';
+                if(!hoverCooldown && stitch.speechTimer <= 0){
+                    hoverCooldown = true;
+                    stitch.speechTimer = 150;
+                    stitch.speechText = 'Olá primo!';
+                    stitchSay('Olá primo!');
+                    setTimeout(()=>{ hoverCooldown = false; }, 5000);
+                }
+            } else {
+                sc.style.cursor = 'default';
             }
         });
 
@@ -907,7 +945,7 @@
                 const by = 70 - bounce;
                 const bubbleY = by - 55;
                 const bubbleX = bx;
-                const text = 'Olá, sou o Stitch!';
+                const text = stitch.speechText || 'Olá, sou o Stitch!';
 
                 ctx.save();
                 ctx.globalAlpha = alpha;
