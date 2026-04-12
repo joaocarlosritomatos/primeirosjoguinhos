@@ -364,20 +364,7 @@
                     const msgs=['Boa!','Limpo!','Muito bem!','Fixe!','Genial!'];
                     if(trashCollected%3===0) showMsg(msgs[Math.floor(Math.random()*msgs.length)]+' 🌊');
 
-                    // Animate out
-                    setTimeout(()=>{
-                        trash.splice(trash.indexOf(t),1);
-                        // Check if level complete
-                        if(trash.length===0){
-                            setTimeout(()=>{
-                                playWin();
-                                const texts=['Oceano mais limpo!','Os peixes agradecem!','Fantastico!','Planeta feliz!'];
-                                document.getElementById('lcText').textContent=texts[Math.floor(Math.random()*texts.length)];
-                                document.getElementById('lcSub').textContent=`Removeste ${trashCollected} lixos! Total: ${totalTrashCollected}`;
-                                document.getElementById('levelComplete').classList.add('show');
-                            },500);
-                        }
-                    },300);
+                    // Trash fades out via drawTrash loop and gets removed there
                     return;
                 }
             }
@@ -1213,6 +1200,16 @@
                     if(t.y >= H - 60){
                         t.y = H - 60;
                         t.sunk = true;
+                        t.sunkTimer = 120; // blink for ~2 seconds then disappear
+                    }
+                }
+
+                // Blink and disappear when sunk
+                if(t.sunk && !t.removing){
+                    t.sunkTimer--;
+                    if(t.sunkTimer <= 0){
+                        t.missed = true;
+                        t.removing = true;
                     }
                 }
 
@@ -1223,31 +1220,56 @@
                     t.y-=2;
                 }
 
-                c.save();
-                c.globalAlpha=Math.max(0,t.opacity);
-                c.translate(t.x,t.y+yOff);
-                c.rotate(t.rot+Math.sin(t.bobble*0.7)*0.05);
+                // Skip drawing during blink-off frames
+                const blinking = t.sunk && !t.removing && t.sunkTimer < 80;
+                if(blinking && Math.floor(t.sunkTimer / 4) % 2 === 0){
+                    // blink off - skip drawing
+                } else {
+                    c.save();
+                    c.globalAlpha=Math.max(0,t.opacity);
+                    c.translate(t.x,t.y+yOff);
+                    c.rotate(t.rot+Math.sin(t.bobble*0.7)*0.05);
 
-                // Background circle for visibility
-                if(!t.removing){
-                    c.beginPath();
-                    c.arc(0,0,t.r+6,0,Math.PI*2);
-                    c.fillStyle='rgba(255,255,255,0.35)';
-                    c.fill();
-                    c.strokeStyle='rgba(255,60,60,'+(0.5+Math.sin(t.bobble*2)*0.2)+')';
-                    c.lineWidth=3;
-                    c.setLineDash([5,5]);
-                    c.stroke();
-                    c.setLineDash([]);
+                    // Red dashed outline only (no background fill)
+                    if(!t.removing){
+                        c.beginPath();
+                        c.arc(0,0,t.r+6,0,Math.PI*2);
+                        c.strokeStyle='rgba(255,60,60,'+(0.4+Math.sin(t.bobble*2)*0.2)+')';
+                        c.lineWidth=2.5;
+                        c.setLineDash([5,5]);
+                        c.stroke();
+                        c.setLineDash([]);
+                    }
+
+                    c.font=t.r*1.7+'px serif';
+                    c.textAlign='center';
+                    c.textBaseline='middle';
+                    c.fillText(t.emoji,0,0);
+
+                    c.restore();
                 }
-
-                c.font=t.r*1.7+'px serif';
-                c.textAlign='center';
-                c.textBaseline='middle';
-                c.fillText(t.emoji,0,0);
-
-                c.restore();
             });
+
+            // Remove faded-out trash (both collected and missed)
+            for(let i=trash.length-1;i>=0;i--){
+                if(trash[i].opacity<=0){
+                    const wasMissed = trash[i].missed;
+                    trash.splice(i,1);
+                    if(wasMissed){
+                        showMsg('Escapou! 😢');
+                    }
+                    // Check if level complete (all trash gone)
+                    if(trash.length===0){
+                        setTimeout(()=>{
+                            playWin();
+                            const texts=['Oceano mais limpo!','Os peixes agradecem!','Fantastico!','Planeta feliz!'];
+                            document.getElementById('lcText').textContent=texts[Math.floor(Math.random()*texts.length)];
+                            document.getElementById('lcSub').textContent=`Removeste ${trashCollected} lixos! Total: ${totalTrashCollected}`;
+                            document.getElementById('levelComplete').classList.add('show');
+                        },500);
+                    }
+                }
+            }
         }
 
         // ===== SUBMARINE =====
