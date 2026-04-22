@@ -356,6 +356,7 @@
         { href:'jogo-numeros.html', title:'Primeiros Numeros', age:'2-4 anos', draw: drawNumeros },
         { href:'jogo-ingles.html', title:'Aprende Ingles', age:'3+ anos', draw: drawIngles },
         { href:'jogo-oceano.html', title:'Limpa o Oceano', age:'2+ anos', draw: drawOceano },
+        { href:'jogo-espaco.html', title:'Limpa o Espaco', age:'2+ anos', draw: drawEspaco },
         { href:'jogo-objetos.html', title:'Objetos do Dia', age:'1-3 anos', draw: drawObjetos },
         { href:'jogo-pintar.html', title:'Pintar', age:'1+ anos', draw: drawPintar },
         { href:'jogo-colorir.html', title:'Colorir', age:'2+ anos', draw: drawColorir },
@@ -517,6 +518,54 @@
         // Trash
         c.fillStyle='rgba(255,100,100,0.5)';
         c.fillRect(w*0.6,h*0.55,w*0.12,w*0.08);
+    }
+    function drawEspaco(c,w,h){
+        // Dark space background
+        c.fillStyle='rgba(26,26,78,0.25)';c.fillRect(0,0,w,h);
+        // Stars
+        c.fillStyle='#fff';
+        [[0.1,0.15,1.5],[0.3,0.25,1],[0.85,0.1,1.3],[0.7,0.2,0.8],[0.2,0.7,1],[0.9,0.6,1.2],[0.5,0.15,0.7],[0.4,0.75,1]].forEach(s=>{
+            c.beginPath();c.arc(w*s[0],h*s[1],s[2],0,Math.PI*2);c.fill();
+        });
+        // Planet (saturn-like with ring)
+        const px=w*0.3, py=h*0.5, pr=w*0.18;
+        // Ring back
+        c.strokeStyle='#d4a76a';c.lineWidth=3;
+        c.beginPath();c.ellipse(px,py,pr*1.6,pr*0.35,0.3,Math.PI,Math.PI*2);c.stroke();
+        // Planet
+        const grad=c.createRadialGradient(px-pr*0.3,py-pr*0.3,0,px,py,pr);
+        grad.addColorStop(0,'#f39c12');grad.addColorStop(1,'#a04000');
+        c.fillStyle=grad;
+        c.beginPath();c.arc(px,py,pr,0,Math.PI*2);c.fill();
+        // Ring front
+        c.beginPath();c.ellipse(px,py,pr*1.6,pr*0.35,0.3,0,Math.PI);c.stroke();
+        // Rocket
+        const rx=w*0.7, ry=h*0.45, rs=w*0.1;
+        c.save();c.translate(rx,ry);c.rotate(-0.3);
+        // Body
+        c.fillStyle='#ecf0f1';
+        c.beginPath();c.moveTo(0,-rs);c.quadraticCurveTo(rs*0.5,-rs*0.3,rs*0.45,rs*0.5);
+        c.lineTo(-rs*0.45,rs*0.5);c.quadraticCurveTo(-rs*0.5,-rs*0.3,0,-rs);c.fill();
+        // Tip
+        c.fillStyle='#e74c3c';
+        c.beginPath();c.moveTo(0,-rs);c.quadraticCurveTo(rs*0.2,-rs*0.6,0,-rs*0.4);
+        c.quadraticCurveTo(-rs*0.2,-rs*0.6,0,-rs);c.fill();
+        // Window
+        c.fillStyle='#3498db';c.beginPath();c.arc(0,-rs*0.2,rs*0.15,0,Math.PI*2);c.fill();
+        // Fins
+        c.fillStyle='#e74c3c';
+        c.beginPath();c.moveTo(rs*0.45,rs*0.3);c.lineTo(rs*0.7,rs*0.5);c.lineTo(rs*0.45,rs*0.5);c.fill();
+        c.beginPath();c.moveTo(-rs*0.45,rs*0.3);c.lineTo(-rs*0.7,rs*0.5);c.lineTo(-rs*0.45,rs*0.5);c.fill();
+        // Flame
+        c.fillStyle='#f39c12';
+        c.beginPath();c.moveTo(-rs*0.3,rs*0.5);c.lineTo(0,rs*0.9);c.lineTo(rs*0.3,rs*0.5);c.fill();
+        c.restore();
+        // Space trash (satellite)
+        c.fillStyle='rgba(150,150,150,0.8)';
+        c.fillRect(w*0.12,h*0.8,w*0.08,w*0.05);
+        c.fillStyle='rgba(50,100,200,0.6)';
+        c.fillRect(w*0.08,h*0.82,w*0.04,w*0.02);
+        c.fillRect(w*0.2,h*0.82,w*0.04,w*0.02);
     }
     function drawObjetos(c,w,h){
         // Simple house
@@ -803,6 +852,9 @@
             speechTimer: 0,
         };
 
+        // Stitch real "hi" audio (last 3s of clip)
+        const stitchHiAudio = new Audio('stitch-hi.mp3');
+
         // Stitch voice - speech synthesis
         function stitchSay(text){
             if('speechSynthesis' in window){
@@ -844,8 +896,9 @@
                 if(!hoverCooldown && stitch.speechTimer <= 0){
                     hoverCooldown = true;
                     stitch.speechTimer = 150;
-                    stitch.speechText = 'Olá primo!';
-                    stitchSay('Olá primo!');
+                    stitch.speechText = 'Hi!';
+                    stitchHiAudio.currentTime = 0;
+                    stitchHiAudio.play().catch(()=>{});
                     setTimeout(()=>{ hoverCooldown = false; }, 5000);
                 }
             } else {
