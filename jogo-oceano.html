@@ -346,29 +346,6 @@
             const px=e.clientX-rect.left;
             const py=e.clientY-rect.top;
 
-            // Check trash (reverse order - top items first)
-            for(let i=trash.length-1;i>=0;i--){
-                const t=trash[i];
-                if(t.removing) continue;
-                const dx=px-t.x;
-                const dy=py-t.y;
-                if(Math.sqrt(dx*dx+dy*dy)<t.r+15){
-                    // Remove trash!
-                    t.removing=true;
-                    playClean();
-                    spawnCleanParticles(e.clientX, e.clientY);
-                    trashCollected++;
-                    totalTrashCollected++;
-                    document.getElementById('trashCount').textContent='🗑️ '+trashCollected;
-
-                    const msgs=['Boa!','Limpo!','Muito bem!','Fixe!','Genial!'];
-                    if(trashCollected%3===0) showMsg(msgs[Math.floor(Math.random()*msgs.length)]+' 🌊');
-
-                    // Trash fades out via drawTrash loop and gets removed there
-                    return;
-                }
-            }
-
             // Check if clicked an animal (wrong!)
             for(let i=animals.length-1;i>=0;i--){
                 const a=animals[i];
@@ -377,7 +354,6 @@
                 if(Math.sqrt(dx*dx+dy*dy)<a.size){
                     playWrong();
                     showMsg('Nao! Esse e um animal! 🐟');
-                    // Scare the animal away faster
                     a.speed *= 3;
                     return;
                 }
@@ -1189,7 +1165,49 @@
             }
         }
 
+        // Separate overlay canvas for trash (avoids state leaks)
+        const trashCanvas = document.createElement('canvas');
+        trashCanvas.width = W;
+        trashCanvas.height = H;
+        trashCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;';
+        canvas.parentNode.appendChild(trashCanvas);
+        const tc = trashCanvas.getContext('2d');
+
+        // Forward clicks on trash canvas to main handler
+        trashCanvas.addEventListener('pointerdown',(e)=>{
+            e.preventDefault();
+            const rect=trashCanvas.getBoundingClientRect();
+            const px=e.clientX-rect.left;
+            const py=e.clientY-rect.top;
+
+            for(let i=trash.length-1;i>=0;i--){
+                const t=trash[i];
+                if(t.removing) continue;
+                const dx=px-t.x;
+                const dy=py-t.y;
+                if(Math.sqrt(dx*dx+dy*dy)<t.r+15){
+                    t.removing=true;
+                    playClean();
+                    spawnCleanParticles(e.clientX, e.clientY);
+                    trashCollected++;
+                    totalTrashCollected++;
+                    document.getElementById('trashCount').textContent='🗑️ '+trashCollected;
+                    const msgs=['Boa!','Limpo!','Muito bem!','Fixe!','Genial!'];
+                    if(trashCollected%3===0) showMsg(msgs[Math.floor(Math.random()*msgs.length)]+' 🌊');
+                    return;
+                }
+            }
+
+            // If no trash hit, forward to main canvas for animal clicks
+            canvas.dispatchEvent(new PointerEvent('pointerdown',{
+                clientX:e.clientX, clientY:e.clientY,
+                bubbles:true, cancelable:true
+            }));
+        });
+
         function drawTrash(){
+            tc.clearRect(0,0,W,H);
+
             trash.forEach(t=>{
                 t.bobble+=t.bobbleSpeed;
 
@@ -1200,7 +1218,7 @@
                     if(t.y >= H - 60){
                         t.y = H - 60;
                         t.sunk = true;
-                        t.sunkTimer = 120; // blink for ~2 seconds then disappear
+                        t.sunkTimer = 120;
                     }
                 }
 
@@ -1220,33 +1238,22 @@
                     t.y-=2;
                 }
 
-                // Skip drawing during blink-off frames
+                // Blink when sunk
                 const blinking = t.sunk && !t.removing && t.sunkTimer < 80;
                 if(blinking && Math.floor(t.sunkTimer / 4) % 2 === 0){
-                    // blink off - skip drawing
+                    // blink off
                 } else {
-                    c.save();
-                    c.globalAlpha=Math.max(0,t.opacity);
-                    c.translate(t.x,t.y+yOff);
-                    c.rotate(t.rot+Math.sin(t.bobble*0.7)*0.05);
+                    tc.save();
+                    tc.globalAlpha=Math.max(0.01,t.opacity);
+                    tc.translate(t.x,t.y+yOff);
+                    tc.rotate(t.rot+Math.sin(t.bobble*0.7)*0.05);
 
-                    // Red dashed outline only (no background fill)
-                    if(!t.removing){
-                        c.beginPath();
-                        c.arc(0,0,t.r+6,0,Math.PI*2);
-                        c.strokeStyle='rgba(255,60,60,'+(0.4+Math.sin(t.bobble*2)*0.2)+')';
-                        c.lineWidth=2.5;
-                        c.setLineDash([5,5]);
-                        c.stroke();
-                        c.setLineDash([]);
-                    }
+                    tc.font=t.r*1.5+'px serif';
+                    tc.textAlign='center';
+                    tc.textBaseline='middle';
+                    tc.fillText(t.emoji,0,0);
 
-                    c.font=t.r*1.7+'px serif';
-                    c.textAlign='center';
-                    c.textBaseline='middle';
-                    c.fillText(t.emoji,0,0);
-
-                    c.restore();
+                    tc.restore();
                 }
             });
 
