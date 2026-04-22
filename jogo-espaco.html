@@ -812,6 +812,270 @@
             }
         }
 
+        // ===== BENDER =====
+        let bender = {
+            x: -60,
+            dir: 1,
+            speed: 0.6,
+            walk: 0,
+            eyeShift: 0,
+            eyeTimer: 0,
+            mouthTimer: 0,
+            puffTimer: 0,
+            puffs: [],
+        };
+
+        function drawBender(){
+            bender.walk += 0.06;
+            bender.eyeTimer--;
+            bender.mouthTimer--;
+            bender.puffTimer--;
+
+            if(bender.eyeTimer<=0){
+                bender.eyeShift = (Math.random()-0.5)*2;
+                bender.eyeTimer = 60+Math.floor(Math.random()*120);
+            }
+            if(bender.mouthTimer<=0){
+                bender.mouthOpen = Math.random()<0.4;
+                bender.mouthTimer = 30+Math.floor(Math.random()*60);
+            }
+
+            // Cigar puffs
+            if(bender.puffTimer<=0){
+                bender.puffTimer = 40+Math.floor(Math.random()*40);
+                const pdx = bender.dir===1 ? 1 : -1;
+                bender.puffs.push({
+                    x: bender.x + pdx*28,
+                    y: H - 55,
+                    r: 4,
+                    life: 60,
+                });
+            }
+
+            bender.x += bender.speed * bender.dir;
+            if(bender.dir===1 && bender.x > W+60){
+                bender.dir=-1; bender.speed=0.4+Math.random()*0.4;
+            } else if(bender.dir===-1 && bender.x < -60){
+                bender.dir=1; bender.speed=0.4+Math.random()*0.4;
+            }
+
+            // Draw and update puffs
+            for(let i=bender.puffs.length-1;i>=0;i--){
+                const p=bender.puffs[i];
+                p.y -= 0.5;
+                p.x += (Math.random()-0.5)*0.3;
+                p.r += 0.15;
+                p.life--;
+                if(p.life<=0){bender.puffs.splice(i,1);continue;}
+                c.beginPath();
+                c.arc(p.x,p.y,p.r,0,Math.PI*2);
+                c.fillStyle='rgba(200,200,200,'+(p.life/60*0.5)+')';
+                c.fill();
+            }
+
+            const groundY = H - 20;
+            const bounce = Math.abs(Math.sin(bender.walk*2))*3;
+            const legSwing = Math.sin(bender.walk*2)*4;
+
+            c.save();
+            c.translate(bender.x, groundY - 45 - bounce);
+            if(bender.dir===-1) c.scale(-1,1);
+
+            // Legs (springy antenna-like legs)
+            // Left leg
+            c.save();
+            c.translate(-8, 30);
+            c.rotate(legSwing*0.04);
+            // Spring coil
+            c.strokeStyle='#7f8c8d';
+            c.lineWidth=2.5;
+            for(let i=0;i<4;i++){
+                c.beginPath();
+                c.ellipse(0, i*3+2, 3, 1.5, 0, 0, Math.PI*2);
+                c.stroke();
+            }
+            // Foot
+            c.fillStyle='#2c3e50';
+            c.beginPath();
+            c.roundRect(-5, 15, 12, 5, 2);
+            c.fill();
+            c.strokeStyle='#1a252f';
+            c.lineWidth=1;
+            c.stroke();
+            c.restore();
+            // Right leg
+            c.save();
+            c.translate(8, 30);
+            c.rotate(-legSwing*0.04);
+            c.strokeStyle='#7f8c8d';
+            c.lineWidth=2.5;
+            for(let i=0;i<4;i++){
+                c.beginPath();
+                c.ellipse(0, i*3+2, 3, 1.5, 0, 0, Math.PI*2);
+                c.stroke();
+            }
+            c.fillStyle='#2c3e50';
+            c.beginPath();
+            c.roundRect(-5, 15, 12, 5, 2);
+            c.fill();
+            c.strokeStyle='#1a252f';
+            c.lineWidth=1;
+            c.stroke();
+            c.restore();
+
+            // Body (cylindrical chest)
+            const bodyGrad = c.createLinearGradient(-18,0,18,0);
+            bodyGrad.addColorStop(0,'#7f8c8d');
+            bodyGrad.addColorStop(0.5,'#bdc3c7');
+            bodyGrad.addColorStop(1,'#7f8c8d');
+            c.fillStyle=bodyGrad;
+            c.beginPath();
+            c.roundRect(-18, -5, 36, 36, 6);
+            c.fill();
+            c.strokeStyle='#34495e';
+            c.lineWidth=1.5;
+            c.stroke();
+
+            // Chest door/panel lines
+            c.strokeStyle='#34495e';
+            c.lineWidth=1;
+            c.beginPath();
+            c.moveTo(-10, 5); c.lineTo(-10, 28);
+            c.moveTo(10, 5); c.lineTo(10, 28);
+            c.stroke();
+            // Small knob
+            c.beginPath();
+            c.arc(8, 15, 1.5, 0, Math.PI*2);
+            c.fillStyle='#34495e';
+            c.fill();
+
+            // Arms (flexible metal tubes)
+            const armSwing = Math.sin(bender.walk*1.5)*0.2;
+            // Left arm
+            c.save();
+            c.translate(-18, 3);
+            c.rotate(-0.3 + armSwing);
+            c.strokeStyle='#95a5a6';
+            c.lineWidth=2;
+            for(let i=0;i<5;i++){
+                c.beginPath();
+                c.ellipse(0, i*3+2, 2.5, 1.2, 0, 0, Math.PI*2);
+                c.stroke();
+            }
+            // Hand (holding cigar)
+            c.fillStyle='#bdc3c7';
+            c.beginPath();
+            c.arc(0, 17, 3.5, 0, Math.PI*2);
+            c.fill();
+            c.strokeStyle='#34495e';
+            c.lineWidth=1;
+            c.stroke();
+            c.restore();
+            // Right arm (holds cigar)
+            c.save();
+            c.translate(18, 3);
+            c.rotate(0.5 - armSwing*0.5);
+            c.strokeStyle='#95a5a6';
+            c.lineWidth=2;
+            for(let i=0;i<5;i++){
+                c.beginPath();
+                c.ellipse(0, i*3+2, 2.5, 1.2, 0, 0, Math.PI*2);
+                c.stroke();
+            }
+            // Hand
+            c.fillStyle='#bdc3c7';
+            c.beginPath();
+            c.arc(0, 17, 3.5, 0, Math.PI*2);
+            c.fill();
+            c.strokeStyle='#34495e';
+            c.lineWidth=1;
+            c.stroke();
+            // Cigar
+            c.fillStyle='#5d4037';
+            c.fillRect(2, 14, 10, 3);
+            // Cigar tip (glowing)
+            c.fillStyle='#e74c3c';
+            c.fillRect(11, 14, 2, 3);
+            c.fillStyle='#f39c12';
+            c.fillRect(12, 14.5, 1, 2);
+            c.restore();
+
+            // Head (cylindrical with rounded top)
+            const headGrad = c.createLinearGradient(-16,0,16,0);
+            headGrad.addColorStop(0,'#7f8c8d');
+            headGrad.addColorStop(0.5,'#bdc3c7');
+            headGrad.addColorStop(1,'#7f8c8d');
+            c.fillStyle=headGrad;
+            c.beginPath();
+            c.roundRect(-15, -35, 30, 30, 12);
+            c.fill();
+            c.strokeStyle='#34495e';
+            c.lineWidth=1.5;
+            c.stroke();
+
+            // Neck
+            c.fillStyle='#7f8c8d';
+            c.fillRect(-6, -8, 12, 4);
+
+            // Antenna
+            c.strokeStyle='#34495e';
+            c.lineWidth=2;
+            c.beginPath();
+            c.moveTo(0, -35);
+            c.lineTo(0, -45);
+            c.stroke();
+            // Antenna ball
+            c.beginPath();
+            c.arc(0, -48, 3, 0, Math.PI*2);
+            c.fillStyle='#7f8c8d';
+            c.fill();
+            c.strokeStyle='#34495e';
+            c.lineWidth=1;
+            c.stroke();
+
+            // Eyes (visor strip with two eyes)
+            c.fillStyle='#ecf0f1';
+            c.beginPath();
+            c.roundRect(-11, -26, 22, 9, 2);
+            c.fill();
+            c.strokeStyle='#34495e';
+            c.lineWidth=1;
+            c.stroke();
+            // Eyes (pupils) - shifting
+            const eyeOffX = bender.eyeShift;
+            c.fillStyle='#000';
+            c.beginPath();
+            c.arc(-5+eyeOffX, -22, 2, 0, Math.PI*2);
+            c.fill();
+            c.beginPath();
+            c.arc(5+eyeOffX, -22, 2, 0, Math.PI*2);
+            c.fill();
+
+            // Mouth (grille)
+            c.fillStyle='#2c3e50';
+            c.beginPath();
+            c.roundRect(-8, -14, 16, 6, 1);
+            c.fill();
+            // Grille lines
+            c.strokeStyle='#ecf0f1';
+            c.lineWidth=1;
+            for(let i=-6;i<=6;i+=2){
+                c.beginPath();
+                c.moveTo(i, -13);
+                c.lineTo(i, -9);
+                c.stroke();
+            }
+            // Open mouth occasionally
+            if(bender.mouthOpen){
+                c.fillStyle='#000';
+                c.beginPath();
+                c.roundRect(-5, -13, 10, 4, 1);
+                c.fill();
+            }
+
+            c.restore();
+        }
+
         // ===== GAME LOOP =====
         function frame(){
             c.clearRect(0,0,W,H);
@@ -819,6 +1083,7 @@
             drawPlanets();
             drawShootingStars();
             drawEntities();
+            drawBender();
             drawTrash();
             requestAnimationFrame(frame);
         }
