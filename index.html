@@ -1,16 +1,65 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Primeiros Joguinhos - Jogos para Bebés e Crianças</title>
-    <meta name="description" content="Jogos divertidos e educativos para bebés e crianças pequenas. Toca, brinca e aprende!">
+    <title>Primeiros Joguinhos - Jogos Educativos Grátis para Bebés e Crianças (1-4 anos)</title>
+    <meta name="description" content="15 jogos online gratuitos para bebés e crianças dos 1 aos 4 anos. Aprende cores, números, animais, inglês e muito mais. Sem publicidade, sem registo. Ideal para tablet e telemóvel.">
+    <meta name="keywords" content="jogos para criancas, jogos para bebes, jogos educativos, jogos online gratis, jogos infantis, aprender cores, aprender numeros, jogos 1 ano, jogos 2 anos, jogos 3 anos, jogos 4 anos, tablet criancas, jogos em portugues">
+    <meta name="author" content="Primeiros Joguinhos">
+    <meta name="robots" content="index, follow">
+    <meta name="rating" content="general">
+    <link rel="canonical" href="https://primeirosjoguinhos.pt/">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://primeirosjoguinhos.pt/">
+    <meta property="og:title" content="Primeiros Joguinhos - Jogos Educativos Grátis para Crianças">
+    <meta property="og:description" content="15 jogos online gratuitos para bebés e crianças. Aprende cores, números, animais, inglês e mais. Sem publicidade.">
+    <meta property="og:image" content="https://primeirosjoguinhos.pt/icon-180x180.png">
+    <meta property="og:locale" content="pt_PT">
+    <meta property="og:site_name" content="Primeiros Joguinhos">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Primeiros Joguinhos - Jogos para Crianças">
+    <meta name="twitter:description" content="15 jogos online gratuitos para bebés e crianças dos 1 aos 4 anos.">
+    <meta name="twitter:image" content="https://primeirosjoguinhos.pt/icon-180x180.png">
+
+    <!-- PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Joguinhos">
     <meta name="theme-color" content="#a8edea">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-180x180.png">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Primeiros Joguinhos",
+      "url": "https://primeirosjoguinhos.pt/",
+      "description": "Jogos educativos gratuitos para bebés e crianças dos 1 aos 4 anos.",
+      "inLanguage": "pt-PT",
+      "audience": {
+        "@type": "PeopleAudience",
+        "suggestedMinAge": 1,
+        "suggestedMaxAge": 4
+      },
+      "isAccessibleForFree": true
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Primeiros Joguinhos",
+      "url": "https://primeirosjoguinhos.pt/",
+      "logo": "https://primeirosjoguinhos.pt/icon-180x180.png"
+    }
+    </script>
     <style>
         * {
             margin: 0;
@@ -306,10 +355,58 @@
             z-index: 1;
             padding: 20px;
             text-align: center;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255,255,255,0.75);
             font-size: 12px;
-            margin-bottom: 60px;
+            margin-bottom: 80px;
         }
+        .footer-links a {
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            margin: 0 4px;
+            font-weight: 600;
+        }
+        .footer-links a:hover { text-decoration: underline; }
+
+        .cookie-banner {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            max-width: 720px;
+            margin: 0 auto;
+            z-index: 100;
+            background: rgba(30,30,45,0.96);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            display: none;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .cookie-banner.show { display: flex; }
+        .cookie-text {
+            flex: 1 1 280px;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+        .cookie-text a { color: #a8edea; text-decoration: underline; }
+        .cookie-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cookie-btn {
+            padding: 10px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .cookie-btn-accept { background: #55efc4; color: #0d1220; }
+        .cookie-btn-info { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.4); }
+        .cookie-btn:hover { filter: brightness(1.1); }
 
         .music-btn {
             position: fixed;
@@ -1001,8 +1098,38 @@
     </script>
 
     <footer>
-        Primeiros Joguinhos &copy; 2026
+        <div style="margin-bottom:6px;">Primeiros Joguinhos &copy; 2026</div>
+        <div class="footer-links">
+            <a href="privacidade.html">Privacidade</a> ·
+            <a href="cookies.html">Cookies</a> ·
+            <a href="termos.html">Termos</a>
+        </div>
     </footer>
+
+    <!-- Cookie Banner -->
+    <div id="cookieBanner" class="cookie-banner" role="dialog" aria-label="Aviso de cookies">
+        <div class="cookie-text">
+            Este site usa apenas <strong>cookies técnicos essenciais</strong> para guardar o teu progresso nos jogos. Não usamos publicidade nem partilhamos dados. Ao continuar a usar o site, aceitas a nossa <a href="cookies.html">Política de Cookies</a>.
+        </div>
+        <div class="cookie-actions">
+            <button id="cookieAccept" class="cookie-btn cookie-btn-accept">Aceitar</button>
+            <a href="cookies.html" class="cookie-btn cookie-btn-info">Saber mais</a>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        try {
+            if(!localStorage.getItem('cookieConsent')){
+                document.getElementById('cookieBanner').classList.add('show');
+            }
+            document.getElementById('cookieAccept').addEventListener('click',function(){
+                try { localStorage.setItem('cookieConsent','1'); } catch(e){}
+                document.getElementById('cookieBanner').classList.remove('show');
+            });
+        } catch(e){}
+    })();
+    </script>
 
     <div class="grass"></div>
     <div class="grass-dark"></div>

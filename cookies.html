@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Cookies - Primeiros Joguinhos</title>
+    <meta name="description" content="Política de Cookies do site Primeiros Joguinhos. Usamos apenas cookies técnicos essenciais.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://primeirosjoguinhos.pt/cookies.html">
+    <meta name="theme-color" content="#a8edea">
+    <link rel="apple-touch-icon" href="icon-180x180.png">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{
+            font-family:'Segoe UI',Arial,sans-serif;
+            background:linear-gradient(135deg,#a8edea 0%,#fed6e3 50%,#ffd89b 100%);
+            min-height:100vh;color:#2d3436;line-height:1.6;
+        }
+        .container{max-width:800px;margin:0 auto;padding:30px 20px 80px;}
+        .header{text-align:center;margin-bottom:30px;}
+        .home-link{
+            display:inline-block;padding:8px 16px;border-radius:20px;
+            background:rgba(255,255,255,0.7);text-decoration:none;color:#2d3436;
+            font-weight:700;margin-bottom:20px;font-size:14px;
+        }
+        h1{font-size:clamp(24px,5vw,36px);color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,0.15);}
+        .card{
+            background:rgba(255,255,255,0.92);border-radius:18px;
+            padding:28px 24px;box-shadow:0 6px 18px rgba(0,0,0,0.08);
+        }
+        h2{font-size:20px;margin:22px 0 10px;color:#2980b9;}
+        h2:first-child{margin-top:0;}
+        p{margin-bottom:12px;}
+        ul{margin:10px 0 16px 22px;}
+        li{margin-bottom:6px;}
+        a{color:#2980b9;}
+        table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;}
+        th,td{border:1px solid #dfe6e9;padding:10px;text-align:left;}
+        th{background:#f1f2f6;}
+        .updated{font-size:12px;color:#636e72;margin-top:24px;padding-top:16px;border-top:1px solid #eee;}
+        button.reset{
+            margin-top:10px;padding:10px 20px;border-radius:20px;border:none;
+            background:#55efc4;color:#0d1220;font-weight:700;cursor:pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="home-link">← Voltar aos jogos</a>
+            <h1>Política de Cookies</h1>
+        </div>
+        <div class="card">
+            <h2>O que são cookies?</h2>
+            <p>Cookies (e tecnologias semelhantes, como <em>localStorage</em>) são pequenos ficheiros guardados no teu dispositivo pelo browser. Servem para melhorar a experiência de utilização dos sites.</p>
+
+            <h2>Que cookies usamos?</h2>
+            <p>O Primeiros Joguinhos usa apenas <strong>armazenamento técnico essencial</strong>. Não usamos cookies de publicidade, análise, estatística nem rastreadores de terceiros.</p>
+
+            <table>
+                <thead>
+                    <tr><th>Nome</th><th>Tipo</th><th>Finalidade</th><th>Duração</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>cookieConsent</td>
+                        <td>Técnico (localStorage)</td>
+                        <td>Lembrar que já viste o aviso de cookies.</td>
+                        <td>Persistente</td>
+                    </tr>
+                    <tr>
+                        <td>Progresso dos jogos</td>
+                        <td>Técnico (localStorage)</td>
+                        <td>Guardar o nível/estado de alguns jogos no teu dispositivo.</td>
+                        <td>Persistente</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Cookies de terceiros</h2>
+            <p><strong>Nenhuns.</strong> Não há Google Analytics, nem Facebook Pixel, nem publicidade, nem botões de redes sociais que rastreiem.</p>
+
+            <h2>Como desativar ou apagar</h2>
+            <p>Podes apagar os dados guardados localmente a qualquer momento:</p>
+            <ul>
+                <li><strong>No browser</strong>: Definições → Privacidade → Apagar dados de navegação → Cookies e dados de sites.</li>
+                <li><strong>Neste site</strong>: Clica no botão abaixo para limpar tudo o que este site guardou.</li>
+            </ul>
+            <button class="reset" onclick="resetConsent()">Apagar dados guardados por este site</button>
+
+            <h2>Base legal</h2>
+            <p>Usamos armazenamento apenas para fins estritamente necessários ao funcionamento do site. De acordo com o artigo 5.º/3 da Diretiva ePrivacy, os cookies técnicos essenciais não requerem consentimento prévio — mas informamos sobre o seu uso por transparência.</p>
+
+            <h2>Mais informação</h2>
+            <p>Consulta também a nossa <a href="privacidade.html">Política de Privacidade</a>.</p>
+
+            <div class="updated">Última atualização: Abril 2026</div>
+        </div>
+    </div>
+    <script>
+    function resetConsent(){
+        try {
+            const n = localStorage.length;
+            localStorage.clear();
+            sessionStorage.clear();
+            alert('Dados apagados! ('+n+' chaves removidas)');
+        } catch(e){
+            alert('Não foi possível apagar os dados.');
+        }
+    }
+    </script>
+</body>
+</html>
