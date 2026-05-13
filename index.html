@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Primeiros Joguinhos - Jogos Educativos Grátis para Bebés e Crianças (1-4 anos)</title>
-    <meta name="description" content="16 jogos online gratuitos para bebés e crianças dos 1 aos 4 anos. Aprende cores, números, animais, inglês e muito mais. Sem publicidade, sem registo. Ideal para tablet e telemóvel.">
+    <meta name="description" content="17 jogos online gratuitos para bebés e crianças dos 1 aos 4 anos. Aprende cores, números, animais, inglês e muito mais. Sem publicidade, sem registo. Ideal para tablet e telemóvel.">
     <meta name="keywords" content="jogos para criancas, jogos para bebes, jogos educativos, jogos online gratis, jogos infantis, aprender cores, aprender numeros, jogos 1 ano, jogos 2 anos, jogos 3 anos, jogos 4 anos, tablet criancas, jogos em portugues">
     <meta name="author" content="Primeiros Joguinhos">
     <meta name="robots" content="index, follow">
@@ -15,7 +15,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://primeirosjoguinhos.pt/">
     <meta property="og:title" content="Primeiros Joguinhos - Jogos Educativos Grátis para Crianças">
-    <meta property="og:description" content="16 jogos online gratuitos para bebés e crianças. Aprende cores, números, animais, inglês e mais. Sem publicidade.">
+    <meta property="og:description" content="17 jogos online gratuitos para bebés e crianças. Aprende cores, números, animais, inglês e mais. Sem publicidade.">
     <meta property="og:image" content="https://primeirosjoguinhos.pt/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -26,7 +26,7 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Primeiros Joguinhos - Jogos para Crianças">
-    <meta name="twitter:description" content="16 jogos online gratuitos para bebés e crianças dos 1 aos 4 anos.">
+    <meta name="twitter:description" content="17 jogos online gratuitos para bebés e crianças dos 1 aos 4 anos.">
     <meta name="twitter:image" content="https://primeirosjoguinhos.pt/og-image.png">
 
     <!-- PWA -->
@@ -199,6 +199,7 @@
         .game-card:nth-child(14) { background: linear-gradient(145deg, #a29bfe, #e84393); box-shadow: 0 6px 20px rgba(232,67,147,0.35); }
         .game-card:nth-child(15) { background: linear-gradient(145deg, #81ecec, #00cec9); box-shadow: 0 6px 20px rgba(0,206,201,0.35); }
         .game-card:nth-child(16) { background: linear-gradient(145deg, #ffeaa7, #fab1a0); box-shadow: 0 6px 20px rgba(250,177,160,0.35); }
+        .game-card:nth-child(17) { background: linear-gradient(145deg, #2c3e50, #6c5ce7); box-shadow: 0 6px 20px rgba(108,92,231,0.4); }
 
         .game-card .card-icon {
             pointer-events: none;
@@ -463,6 +464,7 @@
         { href:'jogo-espaco.html', title:'Limpa o Espaco', age:'2+ anos', draw: drawEspaco },
         { href:'jogo-lavacarros.html', title:'Lava o Carro', age:'1-3 anos', draw: drawLavaCarros },
         { href:'jogo-montacarro.html', title:'Monta o Carro', age:'2-4 anos', draw: drawMontaCarro },
+        { href:'jogo-montanave.html', title:'Monta a Nave', age:'2-4 anos', draw: drawMontaNave },
         { href:'jogo-objetos.html', title:'Objetos do Dia', age:'1-3 anos', draw: drawObjetos },
         { href:'jogo-pintar.html', title:'Pintar', age:'1+ anos', draw: drawPintar },
         { href:'jogo-colorir.html', title:'Colorir', age:'2+ anos', draw: drawColorir },
@@ -823,6 +825,122 @@
         c.fillStyle='#fff';c.font='bold '+(w*0.06)+'px serif';
         c.fillText('✨', w*0.1, h*0.5);
         c.fillText('🔧', w*0.85, h*0.52);
+    }
+    function drawMontaNave(c,w,h){
+        // Dark space background overlay with stars
+        c.fillStyle='rgba(20,20,50,0.35)';c.fillRect(0,0,w,h);
+        c.fillStyle='#fff';
+        [[0.12,0.12,1.5],[0.85,0.15,1.2],[0.25,0.25,1],[0.78,0.32,0.8],[0.15,0.78,1.3],[0.92,0.7,1]].forEach(s=>{
+            c.beginPath();c.arc(w*s[0],h*s[1],s[2],0,Math.PI*2);c.fill();
+        });
+
+        // Half-built rocket in middle
+        const cx=w*0.5, cy=h*0.52, S=w*0.18;
+
+        // Body (placed)
+        c.fillStyle='#3498db';
+        c.strokeStyle='#1f618d';
+        c.lineWidth=2;
+        c.beginPath();
+        c.moveTo(cx-S*0.4, cy-S*0.4);
+        c.lineTo(cx-S*0.4, cy+S*0.7);
+        c.lineTo(cx+S*0.4, cy+S*0.7);
+        c.lineTo(cx+S*0.4, cy-S*0.4);
+        c.closePath();c.fill();c.stroke();
+        // Accent band
+        c.fillStyle='#ecf0f1';
+        c.fillRect(cx-S*0.4, cy+S*0.05, S*0.8, S*0.1);
+
+        // Placed cockpit (nose cone)
+        c.fillStyle='#3498db';
+        c.strokeStyle='#1f618d';
+        c.lineWidth=2;
+        c.beginPath();
+        c.moveTo(cx, cy-S*0.9);
+        c.quadraticCurveTo(cx+S*0.05, cy-S*0.55, cx+S*0.4, cy-S*0.4);
+        c.lineTo(cx-S*0.4, cy-S*0.4);
+        c.quadraticCurveTo(cx-S*0.05, cy-S*0.55, cx, cy-S*0.9);
+        c.closePath();c.fill();c.stroke();
+        // Window
+        c.fillStyle='#aed6f1';
+        c.beginPath();c.arc(cx, cy-S*0.55, S*0.13, 0, Math.PI*2);c.fill();
+        c.strokeStyle='#1f618d';c.lineWidth=1.5;c.stroke();
+
+        // Placed left fin
+        c.fillStyle='#3498db';
+        c.strokeStyle='#1f618d';
+        c.lineWidth=2;
+        c.beginPath();
+        c.moveTo(cx-S*0.4, cy+S*0.2);
+        c.lineTo(cx-S*0.4, cy+S*0.7);
+        c.lineTo(cx-S*0.75, cy+S*0.8);
+        c.closePath();c.fill();c.stroke();
+
+        // Empty slot - right fin (dashed outline)
+        c.strokeStyle='rgba(255,255,255,0.75)';
+        c.setLineDash([w*0.012, w*0.01]);
+        c.lineWidth=2.5;
+        c.beginPath();
+        c.moveTo(cx+S*0.4, cy+S*0.2);
+        c.lineTo(cx+S*0.4, cy+S*0.7);
+        c.lineTo(cx+S*0.75, cy+S*0.8);
+        c.closePath();c.stroke();
+        c.setLineDash([]);
+
+        // Empty slot - thrusters (dashed)
+        c.strokeStyle='rgba(255,255,255,0.7)';
+        c.setLineDash([w*0.012, w*0.01]);
+        c.beginPath();
+        c.moveTo(cx-S*0.25, cy+S*0.7);
+        c.lineTo(cx-S*0.05, cy+S*0.7);
+        c.lineTo(cx-S*0.02, cy+S*1.0);
+        c.lineTo(cx-S*0.28, cy+S*1.0);
+        c.closePath();c.stroke();
+        c.setLineDash([]);
+
+        // Floating thruster part (left side of card)
+        const tx=w*0.22, ty=h*0.78;
+        c.fillStyle='rgba(0,0,0,0.3)';
+        c.beginPath();c.ellipse(tx, ty+S*0.12, S*0.18, S*0.04, 0, 0, Math.PI*2);c.fill();
+        c.fillStyle='#95a5a6';
+        c.strokeStyle='#34495e';c.lineWidth=2;
+        c.beginPath();
+        c.moveTo(tx-S*0.15, ty-S*0.13);
+        c.lineTo(tx+S*0.15, ty-S*0.13);
+        c.lineTo(tx+S*0.18, ty+S*0.13);
+        c.lineTo(tx-S*0.18, ty+S*0.13);
+        c.closePath();c.fill();c.stroke();
+        c.fillStyle='#bdc3c7';
+        c.fillRect(tx-S*0.15, ty-S*0.15, S*0.3, S*0.05);
+        // Dark hole
+        c.fillStyle='#1a1a1a';
+        c.beginPath();c.ellipse(tx, ty+S*0.12, S*0.13, S*0.03, 0, 0, Math.PI*2);c.fill();
+
+        // Floating right fin (right side of card)
+        const fx=w*0.78, fy=h*0.74;
+        c.fillStyle='rgba(0,0,0,0.25)';
+        c.beginPath();c.ellipse(fx, fy+S*0.3, S*0.3, S*0.04, 0, 0, Math.PI*2);c.fill();
+        c.fillStyle='#3498db';
+        c.strokeStyle='#1f618d';c.lineWidth=2;
+        c.beginPath();
+        c.moveTo(fx-S*0.2, fy-S*0.2);
+        c.lineTo(fx-S*0.2, fy+S*0.25);
+        c.lineTo(fx+S*0.25, fy+S*0.3);
+        c.closePath();c.fill();c.stroke();
+
+        // Flames small (preview)
+        c.fillStyle='#f39c12';
+        c.beginPath();
+        c.moveTo(cx-S*0.15, cy+S*1.0);
+        c.lineTo(cx+S*0.15, cy+S*1.0);
+        c.lineTo(cx+S*0.05, cy+S*1.2);
+        c.lineTo(cx-S*0.05, cy+S*1.2);
+        c.closePath();c.fill();
+
+        // Sparkles
+        c.fillStyle='#fff';c.font='bold '+(w*0.05)+'px serif';
+        c.fillText('🚀', w*0.06, h*0.2);
+        c.fillText('⭐', w*0.88, h*0.36);
     }
     function drawObjetos(c,w,h){
         // Simple house
