@@ -343,8 +343,7 @@
             ctx.fillStyle = '#fff';
             const dashY = H*0.72;
             for(let i=0; i<10; i++){
-                const dx = (i*W/10 + driveX) % W;
-                ctx.fillRect(dx, dashY, W*0.05, 4);
+                ctx.fillRect(i*W/10 + W*0.02, dashY, W*0.05, 4);
             }
 
             // Tray background (part shelf)
